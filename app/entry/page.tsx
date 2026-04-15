@@ -6,6 +6,7 @@ import { logout } from "../actions/auth";
 import { todayString } from "@/lib/utils";
 import MyRecentEntries from "./MyRecentEntries";
 import MySchedule from "./MySchedule";
+import MyStats from "./MyStats";
 
 type LiveSession = { id: string; name: string; startTime: string; endTime: string };
 type SessionInfo = { name: string; role: string; profileImage: string | null };
@@ -137,6 +138,8 @@ export default function EntryPage() {
           ออก
         </button>
       </div>
+
+      <MyStats />
 
       <MySchedule />
 

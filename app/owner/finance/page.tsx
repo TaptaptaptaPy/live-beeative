@@ -6,6 +6,7 @@ import { EXPENSE_CATEGORIES } from "@/lib/expense-utils";
 import AddExpenseForm from "./AddExpenseForm";
 import FinanceCharts from "./FinanceCharts";
 import DeleteExpenseButton from "./DeleteExpenseButton";
+import MonthSelector from "./MonthSelector";
 
 export default async function FinancePage({
   searchParams,
@@ -64,12 +65,7 @@ export default async function FinancePage({
       {/* Header */}
       <div className="flex items-center justify-between pt-2">
         <h1 className="text-2xl font-bold text-[#1A1A1A]">💰 รายงานการเงิน</h1>
-        <form>
-          <input type="month" name="month" defaultValue={month}
-            onChange={(e) => { const form = e.target.form; if (form) form.requestSubmit(); }}
-            className="border-2 border-[#F5D400] rounded-xl px-3 py-1.5 text-sm font-medium bg-white focus:outline-none"
-          />
-        </form>
+        <MonthSelector value={month} />
       </div>
 
       <p className="text-sm text-gray-500 -mt-2">{monthLabel}</p>

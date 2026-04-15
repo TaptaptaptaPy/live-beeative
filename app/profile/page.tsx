@@ -4,6 +4,16 @@ import { useState, useRef, useEffect } from "react";
 import { updateOwnProfile } from "@/app/actions/employees";
 import { useRouter } from "next/navigation";
 
+type Stats = {
+  myMonthSales: number; myTodaySales: number; myRank: number | null;
+  totalEmployees: number; myIncentive: number; mySalary: number;
+  targetAmount: number; entryCount: number; month: string;
+};
+
+function fmt(n: number) {
+  return new Intl.NumberFormat("th-TH").format(Math.round(n));
+}
+
 const NUMPAD = [
   ["1", "2", "3"],
   ["4", "5", "6"],
@@ -25,6 +35,7 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState<Stats | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -32,6 +43,7 @@ export default function ProfilePage() {
       if (data?.name) setUserName(data.name);
       if (data?.profileImage) { setPreviewImg(data.profileImage); setImgData(data.profileImage); }
     }).catch(() => {});
+    fetch("/api/my-stats").then(r => r.json()).then(setStats).catch(() => {});
   }, []);
 
   function addDigit(digit: string) {
@@ -93,6 +105,30 @@ export default function ProfilePage() {
       </div>
 
       <div className="p-4 space-y-4 max-w-sm mx-auto pb-24">
+        {/* My stats this month */}
+        {stats && (
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+            <div className="px-4 pt-3 pb-1 text-sm font-bold text-[#1A1A1A]">
+              📊 ยอดขายเดือน {stats.month.replace("-", "/")}
+            </div>
+            <div className="grid grid-cols-2 gap-px bg-gray-100">
+              <div className="bg-white px-4 py-3">
+                <div className="text-xs text-gray-500">วันนี้</div>
+                <div className="text-lg font-bold">฿{fmt(stats.myTodaySales)}</div>
+              </div>
+              <div className="bg-white px-4 py-3">
+                <div className="text-xs text-gray-500">เดือนนี้</div>
+                <div className="text-lg font-bold">฿{fmt(stats.myMonthSales)}</div>
+              </div>
+            </div>
+            <div className="px-4 py-2 flex gap-4 text-xs text-gray-500">
+              {stats.mySalary > 0 && <span>💼 ฿{fmt(stats.mySalary)}</span>}
+              {stats.myIncentive > 0 && <span>🎯 ~฿{fmt(stats.myIncentive)}</span>}
+              {stats.myRank && <span>🏆 อันดับ {stats.myRank}/{stats.totalEmployees}</span>}
+            </div>
+          </div>
+        )}
+
         {/* Profile image */}
         <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
           <div className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden border-4 border-[#F5D400]">

@@ -16,8 +16,31 @@ type Props = {
   entries: Entry[];
   employees: { id: string; name: string }[];
   totalSales: number;
-  filters: { date: string; userId: string; platform: string };
+  filters: { dateFrom: string; dateTo: string; userId: string; platform: string };
 };
+
+function downloadCsv(entries: Entry[]) {
+  const rows = [
+    ["วันที่", "พนักงาน", "Platform", "ช่วงเวลา", "ยอดขาย", "หมายเหตุ", "บันทึกเมื่อ"],
+    ...entries.map(e => [
+      e.date,
+      e.userName,
+      PLATFORM_LABELS[e.platform] ?? e.platform,
+      e.sessionName || (e.customStart ? `${e.customStart}–${e.customEnd}` : "กำหนดเอง"),
+      e.salesAmount.toString(),
+      e.notes ?? "",
+      new Date(e.createdAt).toLocaleString("th-TH"),
+    ]),
+  ];
+  const csv = "\uFEFF" + rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `entries-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function EntriesClient({ entries, employees, totalSales, filters }: Props) {
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
@@ -30,10 +53,17 @@ export default function EntriesClient({ entries, employees, totalSales, filters 
       <form method="GET" action="/owner/entries" className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-gray-500 block mb-1">วันที่</label>
-            <input name="date" type="date" defaultValue={filters.date}
+            <label className="text-xs text-gray-500 block mb-1">ตั้งแต่วันที่</label>
+            <input name="dateFrom" type="date" defaultValue={filters.dateFrom}
               className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]" />
           </div>
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">ถึงวันที่</label>
+            <input name="dateTo" type="date" defaultValue={filters.dateTo}
+              className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs text-gray-500 block mb-1">พนักงาน</label>
             <select name="userId" defaultValue={filters.userId}
@@ -42,14 +72,14 @@ export default function EntriesClient({ entries, employees, totalSales, filters 
               {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
           </div>
-        </div>
-        <div>
-          <label className="text-xs text-gray-500 block mb-1">Platform</label>
-          <select name="platform" defaultValue={filters.platform}
-            className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]">
-            <option value="">ทั้งหมด</option>
-            {Object.entries(PLATFORM_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Platform</label>
+            <select name="platform" defaultValue={filters.platform}
+              className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]">
+              <option value="">ทั้งหมด</option>
+              {Object.entries(PLATFORM_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
         </div>
         <div className="flex gap-2">
           <button type="submit"
@@ -64,13 +94,19 @@ export default function EntriesClient({ entries, employees, totalSales, filters 
         </div>
       </form>
 
-      {/* Summary */}
+      {/* Summary + CSV export */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400] flex justify-between items-center">
         <div>
           <div className="text-sm text-gray-500">{entries.length} รายการ</div>
           <div className="text-xl font-bold text-[#1A1A1A]">{formatCurrency(totalSales)}</div>
         </div>
-        <div className="text-3xl">💰</div>
+        <button
+          onClick={() => downloadCsv(entries)}
+          disabled={entries.length === 0}
+          className="flex items-center gap-1.5 px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-xl text-sm font-medium disabled:opacity-40"
+        >
+          📥 CSV
+        </button>
       </div>
 
       {/* List */}

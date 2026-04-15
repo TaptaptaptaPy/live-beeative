@@ -1,8 +1,10 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
+import TodayBadge from "./TodayBadge";
 
 const NAV = [
   { href: "/owner/dashboard",  label: "ภาพรวม",  emoji: "📊" },
@@ -14,8 +16,21 @@ const NAV = [
   { href: "/owner/reports",    label: "รายงาน",  emoji: "📈" },
 ];
 
+// Pages that benefit from auto-refresh (data changes frequently)
+const AUTO_REFRESH_PAGES = ["/owner/dashboard", "/owner/entries", "/owner/logs"];
+const REFRESH_INTERVAL_MS = 30_000; // 30 seconds
+
 export default function OwnerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    const shouldRefresh = AUTO_REFRESH_PAGES.some(p => pathname.startsWith(p));
+    if (!shouldRefresh) return;
+
+    const id = setInterval(() => router.refresh(), REFRESH_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [pathname, router]);
 
   if (pathname === "/owner/login") return <>{children}</>;
 
@@ -47,11 +62,14 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
             const active = pathname.startsWith(item.href);
             return (
               <Link key={item.href} href={item.href}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all min-w-[56px] ${
+                className={`relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all min-w-[56px] ${
                   active ? "text-[#1A1A1A]" : "text-gray-400"
                 }`}
               >
-                <span className="text-lg">{item.emoji}</span>
+                <span className="text-lg relative">
+                  {item.emoji}
+                  {item.href === "/owner/dashboard" && <TodayBadge />}
+                </span>
                 <span className={`text-[10px] font-medium whitespace-nowrap ${active ? "text-[#1A1A1A] font-bold" : "text-gray-400"}`}>
                   {item.label}
                 </span>

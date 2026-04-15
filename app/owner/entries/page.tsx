@@ -7,14 +7,18 @@ import EntriesClient from "./EntriesClient";
 export default async function EntriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string; userId?: string; platform?: string }>;
+  searchParams: Promise<{ dateFrom?: string; dateTo?: string; userId?: string; platform?: string }>;
 }) {
-  const { date, userId, platform } = await searchParams;
+  const { dateFrom, dateTo, userId, platform } = await searchParams;
+
+  const dateWhere = dateFrom || dateTo
+    ? { date: { gte: dateFrom || "2000-01-01", lte: dateTo || "2099-12-31" } }
+    : {};
 
   const [entries, employees] = await Promise.all([
     prisma.timeEntry.findMany({
       where: {
-        ...(date ? { date } : {}),
+        ...dateWhere,
         ...(userId ? { userId } : {}),
         ...(platform ? { platform: platform as "TIKTOK" | "SHOPEE" | "FACEBOOK" | "OTHER" } : {}),
       },
@@ -48,7 +52,7 @@ export default async function EntriesPage({
       entries={serializedEntries}
       employees={employees.map(e => ({ id: e.id, name: e.name }))}
       totalSales={totalSales}
-      filters={{ date: date ?? "", userId: userId ?? "", platform: platform ?? "" }}
+      filters={{ dateFrom: dateFrom ?? "", dateTo: dateTo ?? "", userId: userId ?? "", platform: platform ?? "" }}
     />
   );
 }
