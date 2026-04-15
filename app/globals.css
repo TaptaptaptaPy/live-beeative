@@ -2,14 +2,31 @@
 
 @theme inline {
   --font-sans: var(--font-sarabun);
+
+  /* Beeative Brand Colors */
+  --color-bee-yellow: #F5D400;
+  --color-bee-yellow-light: #FFF8CC;
+  --color-bee-black: #1A1A1A;
+  --color-bee-peach: #F5A882;
+  --color-bee-peach-light: #FDE8DC;
+  --color-bee-cream: #FFFBEB;
 }
 
 body {
-  background: #f9fafb;
-  color: #111827;
+  background: #FFFBEB;
+  color: #1A1A1A;
 }
 
 /* Smooth tap highlight for mobile */
 * {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Bee-inspired gradient */
+.bee-gradient {
+  background: linear-gradient(135deg, #F5D400 0%, #F5A882 100%);
+}
+
+.bee-gradient-dark {
+  background: linear-gradient(135deg, #1A1A1A 0%, #3D3D3D 100%);
 }

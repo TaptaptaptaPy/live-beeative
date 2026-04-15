@@ -15,8 +15,8 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Protect /entry route - need employee session
-  if (pathname === "/entry") {
+  // Protect /entry and /profile routes - need any session
+  if (pathname === "/entry" || pathname === "/profile") {
     const token = request.cookies.get("session")?.value;
     const session = await decrypt(token);
 
@@ -29,5 +29,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/owner/:path*", "/entry"],
+  matcher: ["/owner/:path*", "/entry", "/profile"],
 };

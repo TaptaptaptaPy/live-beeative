@@ -8,17 +8,27 @@ datasource db {
 }
 
 model User {
-  id            String      @id @default(cuid())
-  name          String
-  role          Role        @default(EMPLOYEE)
-  pin           String?
-  email         String?     @unique
-  password      String?
-  isActive      Boolean     @default(true)
-  incentiveRate Float       @default(1.0)
-  entries       TimeEntry[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                String             @id @default(cuid())
+  name              String
+  role              Role               @default(EMPLOYEE)
+  pin               String?
+  pinSet            Boolean            @default(false)
+  profileImage      String?            // base64 data URL
+  email             String?            @unique
+  password          String?
+  isActive          Boolean            @default(true)
+  deletedAt         DateTime?          // soft delete
+  incentiveRate     Float              @default(1.0)
+  salary            Float              @default(0)
+  showLeave         Boolean            @default(false)
+  entries           TimeEntry[]
+  bulkEntries       BulkEntry[]
+  salesTargets      SalesTarget[]
+  workSchedules     WorkSchedule[]
+  leaveEntitlements LeaveEntitlement[]
+  leaveUsed         LeaveUsed[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 }
 
 model LiveSession {
@@ -43,10 +53,36 @@ model TimeEntry {
   notes       String?
   customStart String?
   customEnd   String?
+  isBackdated Boolean      @default(false)
   user        User         @relation(fields: [userId], references: [id])
   session     LiveSession? @relation(fields: [sessionId], references: [id])
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+}
+
+model BulkEntry {
+  id          String     @id @default(cuid())
+  userId      String?
+  platform    Platform?
+  periodType  PeriodType
+  startDate   String
+  endDate     String
+  totalSales  Float
+  notes       String?
+  createdById String
+  user        User?      @relation(fields: [userId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model ActivityLog {
+  id        String    @id @default(cuid())
+  userId    String?
+  userName  String
+  userRole  Role
+  action    LogAction
+  details   String?
+  createdAt DateTime  @default(now())
 }
 
 model IncentiveRule {
@@ -62,6 +98,91 @@ model IncentiveRule {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model Expense {
+  id          String          @id @default(cuid())
+  name        String
+  amount      Float
+  category    ExpenseCategory
+  date        String
+  notes       String?
+  isRecurring Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+// ──────────────────────────────────────────
+// เป้ายอดขาย & งบรายจ่าย
+// ──────────────────────────────────────────
+
+model SalesTarget {
+  id        String   @id @default(cuid())
+  month     String   // YYYY-MM
+  userId    String?  // null = เป้ารวมทั้งทีม
+  amount    Float
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([month, userId])
+}
+
+model ExpenseBudget {
+  id        String   @id @default(cuid())
+  month     String   @unique // YYYY-MM
+  amount    Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ──────────────────────────────────────────
+// ตารางไลฟ์
+// ──────────────────────────────────────────
+
+model WorkSchedule {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String   // YYYY-MM-DD
+  startTime String   // HH:MM
+  endTime   String   // HH:MM
+  note      String?
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ──────────────────────────────────────────
+// ระบบวันลา
+// ──────────────────────────────────────────
+
+model LeaveEntitlement {
+  id        String    @id @default(cuid())
+  userId    String
+  leaveType LeaveType
+  totalDays Float
+  year      Int
+  user      User      @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userId, leaveType, year])
+}
+
+model LeaveUsed {
+  id        String    @id @default(cuid())
+  userId    String
+  leaveType LeaveType
+  date      String    // YYYY-MM-DD
+  days      Float
+  notes     String?
+  user      User      @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// ──────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────
 
 enum Role {
   OWNER
@@ -79,4 +200,53 @@ enum RuleType {
   PERCENTAGE
   FIXED
   BONUS
+}
+
+enum ExpenseCategory {
+  SALARY
+  PRODUCT
+  MARKETING
+  RENT
+  UTILITIES
+  EQUIPMENT
+  SHIPPING
+  GIFT
+  OTHER
+}
+
+enum PeriodType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+  CUSTOM
+}
+
+enum LogAction {
+  LOGIN
+  LOGOUT
+  ENTRY_CREATE
+  ENTRY_EDIT
+  ENTRY_DELETE
+  BULK_ENTRY_CREATE
+  EXPENSE_CREATE
+  EXPENSE_DELETE
+  EMPLOYEE_CREATE
+  EMPLOYEE_UPDATE
+  EMPLOYEE_DELETE
+  SESSION_CREATE
+  SESSION_DELETE
+  PIN_SET
+  PROFILE_UPDATE
+  SCHEDULE_CREATE
+  SCHEDULE_DELETE
+  LEAVE_UPDATE
+  TARGET_UPDATE
+}
+
+enum LeaveType {
+  SICK
+  PERSONAL
+  ANNUAL
+  OTHER
 }

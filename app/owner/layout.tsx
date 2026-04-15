@@ -5,11 +5,13 @@ import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 
 const NAV = [
-  { href: "/owner/dashboard", label: "Dashboard", emoji: "📊" },
-  { href: "/owner/entries", label: "รายการ", emoji: "📋" },
-  { href: "/owner/incentive", label: "Incentive", emoji: "💰" },
-  { href: "/owner/employees", label: "พนักงาน", emoji: "👥" },
-  { href: "/owner/sessions", label: "ช่วงเวลา", emoji: "⏰" },
+  { href: "/owner/dashboard",  label: "ภาพรวม",  emoji: "📊" },
+  { href: "/owner/schedule",   label: "ตาราง",   emoji: "📅" },
+  { href: "/owner/targets",    label: "เป้ายอด",  emoji: "🎯" },
+  { href: "/owner/employees",  label: "พนักงาน",  emoji: "👥" },
+  { href: "/owner/leave",      label: "วันลา",   emoji: "🏖️" },
+  { href: "/owner/finance",    label: "การเงิน",  emoji: "💰" },
+  { href: "/owner/reports",    label: "รายงาน",  emoji: "📈" },
 ];
 
 export default function OwnerLayout({ children }: { children: React.ReactNode }) {
@@ -18,12 +20,15 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
   if (pathname === "/owner/login") return <>{children}</>;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: "#FFFBEB" }}>
       {/* Top bar */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+      <header className="bg-white border-b-2 border-[#F5D400] px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">📺</span>
-          <span className="font-bold text-gray-800 text-lg">live_beeative</span>
+          <span className="text-2xl">🐝</span>
+          <div>
+            <div className="font-bold text-[#1A1A1A] text-base leading-tight">Beeative LiveBoard</div>
+            <div className="text-xs text-[#F5A882] font-medium">ระบบบันทึกยอดไลฟ์</div>
+          </div>
         </div>
         <button
           onClick={() => logout()}
@@ -33,28 +38,28 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
         </button>
       </header>
 
-      {/* Content */}
       <main className="flex-1 pb-20">{children}</main>
 
-      {/* Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center justify-around px-2 py-2 z-10">
-        {NAV.map((item) => {
-          const active = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-all ${
-                active ? "text-indigo-600" : "text-gray-400"
-              }`}
-            >
-              <span className="text-xl">{item.emoji}</span>
-              <span className={`text-xs font-medium ${active ? "text-indigo-600" : "text-gray-400"}`}>
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
+      {/* Bottom Nav — scrollable for 7 items */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#F5D400] z-10 overflow-x-auto">
+        <div className="flex items-center px-2 py-1.5 min-w-max mx-auto">
+          {NAV.map((item) => {
+            const active = pathname.startsWith(item.href);
+            return (
+              <Link key={item.href} href={item.href}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all min-w-[56px] ${
+                  active ? "text-[#1A1A1A]" : "text-gray-400"
+                }`}
+              >
+                <span className="text-lg">{item.emoji}</span>
+                <span className={`text-[10px] font-medium whitespace-nowrap ${active ? "text-[#1A1A1A] font-bold" : "text-gray-400"}`}>
+                  {item.label}
+                </span>
+                {active && <div className="w-1 h-1 rounded-full bg-[#F5D400]" />}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
     </div>
   );
