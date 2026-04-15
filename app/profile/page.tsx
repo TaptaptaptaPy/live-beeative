@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 type Stats = {
   myMonthSales: number; myTodaySales: number; myRank: number | null;
   totalEmployees: number; myIncentive: number; mySalary: number;
-  targetAmount: number; entryCount: number; month: string;
+  targetAmount: number; entryCount: number; month: string; showSalary: boolean;
 };
 
 function fmt(n: number) {
@@ -122,8 +122,8 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="px-4 py-2 flex gap-4 text-xs text-gray-500">
-              {stats.mySalary > 0 && <span>💼 ฿{fmt(stats.mySalary)}</span>}
-              {stats.myIncentive > 0 && <span>🎯 ~฿{fmt(stats.myIncentive)}</span>}
+              {stats.showSalary && stats.mySalary > 0 && <span>💼 ฿{fmt(stats.mySalary)}</span>}
+              {stats.showSalary && stats.myIncentive > 0 && <span>🎯 ~฿{fmt(stats.myIncentive)}</span>}
               {stats.myRank && <span>🏆 อันดับ {stats.myRank}/{stats.totalEmployees}</span>}
             </div>
           </div>

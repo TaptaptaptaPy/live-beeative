@@ -3,15 +3,19 @@
 import { upsertSalesTarget, upsertExpenseBudget } from "@/app/actions/targets";
 import { useState } from "react";
 
+type Period = "DAILY" | "WEEKLY" | "MONTHLY";
+
 type Props = {
-  month: string;
+  period: Period;
+  dateKey: string;
+  currentMonth: string;
   employees: { id: string; name: string }[];
   overallTarget: number | null;
   empTargets: Record<string, number>;
   expenseBudget: number | null;
 };
 
-export default function TargetsForm({ month, employees, overallTarget, empTargets, expenseBudget }: Props) {
+export default function TargetsForm({ period, dateKey, currentMonth, employees, overallTarget, empTargets, expenseBudget }: Props) {
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +31,7 @@ export default function TargetsForm({ month, employees, overallTarget, empTarget
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
       <div className="p-4 border-b border-gray-100"
         style={{ background: "linear-gradient(135deg, #F5D400, #F5A882)" }}>
-        <h2 className="font-bold text-[#1A1A1A]">✏️ ตั้งค่าเป้า — {month}</h2>
+        <h2 className="font-bold text-[#1A1A1A]">✏️ ตั้งค่าเป้า — {dateKey}</h2>
       </div>
       <div className="p-4 space-y-4">
         {msg && <div className="text-sm text-center rounded-xl p-2 bg-gray-50">{msg}</div>}
@@ -40,7 +44,8 @@ export default function TargetsForm({ month, employees, overallTarget, empTarget
               className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#F5D400] text-sm" />
             <button disabled={loading} onClick={() => {
               const fd = new FormData();
-              fd.append("month", month);
+              fd.append("period", period);
+              fd.append("dateKey", dateKey);
               fd.append("userId", "");
               fd.append("amount", (document.getElementById("overallAmt") as HTMLInputElement).value);
               submit(upsertSalesTarget, fd);
@@ -51,15 +56,15 @@ export default function TargetsForm({ month, employees, overallTarget, empTarget
           </div>
         </div>
 
-        {/* Expense budget */}
+        {/* Expense budget (always monthly) */}
         <div>
-          <label className="block text-sm font-semibold text-[#1A1A1A] mb-1">💸 งบรายจ่าย (฿)</label>
+          <label className="block text-sm font-semibold text-[#1A1A1A] mb-1">💸 งบรายจ่าย (฿) — เดือน {currentMonth}</label>
           <div className="flex gap-2">
             <input id="budgetAmt" type="number" min="0" defaultValue={expenseBudget ?? ""} placeholder="เช่น 100000"
               className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#F5D400] text-sm" />
             <button disabled={loading} onClick={() => {
               const fd = new FormData();
-              fd.append("month", month);
+              fd.append("month", currentMonth);
               fd.append("amount", (document.getElementById("budgetAmt") as HTMLInputElement).value);
               submit(upsertExpenseBudget, fd);
             }} className="px-4 py-2 rounded-xl text-sm font-semibold text-[#1A1A1A]"
@@ -82,7 +87,8 @@ export default function TargetsForm({ month, employees, overallTarget, empTarget
                   const val = (document.getElementById(`emp-${emp.id}`) as HTMLInputElement).value;
                   if (!val) return;
                   const fd = new FormData();
-                  fd.append("month", month);
+                  fd.append("period", period);
+                  fd.append("dateKey", dateKey);
                   fd.append("userId", emp.id);
                   fd.append("amount", val);
                   submit(upsertSalesTarget, fd);

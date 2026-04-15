@@ -51,6 +51,7 @@ export async function updateEmployee(formData: FormData) {
   const salary = parseFloat((formData.get("salary") as string) || "0");
   const incentiveRate = parseFloat((formData.get("incentiveRate") as string) || "0");
   const isActive = formData.get("isActive") === "true";
+  const showSalary = formData.get("showSalary") === "true";
   const pin = (formData.get("pin") as string)?.trim() || "";
   const clearPin = formData.get("clearPin") === "true";
   const profileImage = (formData.get("profileImage") as string) || "";
@@ -60,7 +61,7 @@ export async function updateEmployee(formData: FormData) {
     return { error: "PIN ต้องเป็นตัวเลข 4 หลัก" };
   }
 
-  const data: Record<string, unknown> = { name, salary, incentiveRate, isActive };
+  const data: Record<string, unknown> = { name, salary, incentiveRate, isActive, showSalary };
   if (clearPin) { data.pin = null; data.pinSet = false; }
   else if (pin) { data.pin = pin; data.pinSet = true; }
   if (profileImage) data.profileImage = profileImage;

@@ -58,7 +58,7 @@ export default function EmployeeHome() {
     }
   }
 
-  // Auto-advance when 4 digits entered
+  // Auto-advance when 4 digits entered in set-pin
   useEffect(() => {
     if (step === "set-pin" && pinPhase === "enter" && newPin.length === 4) {
       setTimeout(() => setPinPhase("confirm"), 200);
@@ -89,7 +89,6 @@ export default function EmployeeHome() {
     const result = await setFirstPin(fd);
     if (result?.error) { setError(result.error); setConfirmPin(""); setNewPin(""); setPinPhase("enter"); }
     else {
-      // Auto login
       const loginResult = await employeeLogin(selected.id, newPin);
       if (loginResult?.error) { setError(loginResult.error); setStep("select"); }
       else router.push("/entry");
@@ -97,10 +96,12 @@ export default function EmployeeHome() {
     setLoading(false);
   }
 
-  // Auto-submit when PIN complete
+  // Auto-submit when PIN complete (login step)
   useEffect(() => {
     if (step === "pin" && pin.length === 4 && !loading) submitPin();
   }, [pin]);
+
+  // Auto-submit when confirm PIN complete (set-pin step)
   useEffect(() => {
     if (step === "set-pin" && pinPhase === "confirm" && confirmPin.length === 4 && !loading) submitSetPin();
   }, [confirmPin]);
@@ -127,21 +128,23 @@ export default function EmployeeHome() {
               <p className="text-sm mt-1 text-[#1A1A1A]/60">กรุณาติดต่อเจ้าของร้าน</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-3">
               {employees.map((emp) => (
                 <button key={emp.id} onClick={() => selectEmployee(emp)}
-                  className="bg-white rounded-2xl p-4 text-center shadow-lg active:scale-95 transition-transform border-2 border-transparent hover:border-[#F5D400]">
-                  <div className="w-16 h-16 rounded-full mx-auto mb-2 overflow-hidden border-2 border-[#F5D400]">
+                  className="flex items-center gap-3 p-3 bg-white rounded-2xl shadow-sm active:scale-95 transition-transform border-2 border-transparent hover:border-[#F5D400]">
+                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#F5D400] flex-shrink-0">
                     {emp.profileImage ? (
                       <img src={emp.profileImage} alt={emp.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-[#FFF8CC] flex items-center justify-center text-2xl font-bold text-[#1A1A1A]">
+                      <div className="w-full h-full bg-[#FFF8CC] flex items-center justify-center text-xl font-bold text-[#1A1A1A]">
                         {emp.name.slice(0, 1)}
                       </div>
                     )}
                   </div>
-                  <div className="font-semibold text-[#1A1A1A]">{emp.name}</div>
-                  {!emp.pinSet && <div className="text-xs text-orange-500 mt-0.5">ตั้ง PIN ครั้งแรก</div>}
+                  <span className="font-bold text-[#1A1A1A] flex-1 text-left">{emp.name}</span>
+                  {!emp.pinSet && (
+                    <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">ตั้ง PIN</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -166,7 +169,7 @@ export default function EmployeeHome() {
       <div className="w-full max-w-xs">
         <button onClick={() => { setStep("select"); setError(""); }}
           className="text-[#1A1A1A]/70 text-sm mb-6 flex items-center gap-1">
-          ← กลับ
+          ‹ เลือกคนอื่น
         </button>
 
         <div className="bg-white rounded-3xl p-6 shadow-2xl">
@@ -192,7 +195,7 @@ export default function EmployeeHome() {
           <div className="flex justify-center gap-3 mb-5">
             {[0, 1, 2, 3].map(i => (
               <div key={i}
-                className={`w-12 h-12 rounded-full border-2 flex items-center justify-center text-xl transition-all ${
+                className={`w-14 h-14 rounded-full border-2 flex items-center justify-center text-xl transition-all ${
                   currentPinDisplay.length > i ? "border-[#F5D400] bg-[#F5D400]" : "border-gray-300"
                 }`}>
                 {currentPinDisplay.length > i ? "●" : ""}
@@ -201,7 +204,7 @@ export default function EmployeeHome() {
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 rounded-xl p-3 text-center text-sm mb-4">{error}</div>
+            <div key={error} className="bg-red-50 text-red-600 rounded-xl p-3 text-center text-sm mb-4 animate-shake">{error}</div>
           )}
 
           {loading && (
@@ -209,12 +212,12 @@ export default function EmployeeHome() {
           )}
 
           {/* Numpad */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             {NUMPAD.flat().map((key, i) => (
               <button key={i}
                 onClick={() => { if (key === "⌫") backspace(); else if (key !== "") addDigit(key); }}
                 disabled={key === "" || loading}
-                className={`h-14 rounded-2xl text-xl font-semibold transition-all active:scale-90 ${
+                className={`h-16 rounded-2xl text-2xl font-bold transition-all active:scale-90 ${
                   key === "" ? "opacity-0"
                     : key === "⌫" ? "bg-gray-100 text-gray-600"
                     : "bg-gray-100 text-[#1A1A1A] hover:bg-[#FFF8CC]"

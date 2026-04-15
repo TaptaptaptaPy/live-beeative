@@ -22,7 +22,7 @@ export default async function EntriesPage({
         ...(userId ? { userId } : {}),
         ...(platform ? { platform: platform as "TIKTOK" | "SHOPEE" | "FACEBOOK" | "OTHER" } : {}),
       },
-      include: { user: true, session: true },
+      include: { user: true, session: true, brand: true },
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     }),
     prisma.user.findMany({
@@ -45,6 +45,8 @@ export default async function EntriesPage({
     sessionName: e.session?.name ?? null,
     customStart: e.customStart,
     customEnd: e.customEnd,
+    brandName: e.brand?.name ?? null,
+    brandColor: e.brand?.color ?? null,
   }));
 
   return (

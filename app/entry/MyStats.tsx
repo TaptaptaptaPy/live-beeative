@@ -12,6 +12,7 @@ type Stats = {
   mySalary: number;
   targetAmount: number;
   entryCount: number;
+  showSalary: boolean;
 };
 
 function fmt(n: number) {
@@ -92,7 +93,7 @@ export default function MyStats() {
         )}
 
         {/* Incentive row */}
-        {(stats.myIncentive > 0 || stats.mySalary > 0) && (
+        {stats.showSalary && (stats.myIncentive > 0 || stats.mySalary > 0) && (
           <div className="px-4 pb-3 pt-1 flex gap-3 text-xs text-gray-500">
             {stats.mySalary > 0 && (
               <span>💼 เงินเดือน <span className="font-semibold text-[#1A1A1A]">฿{fmt(stats.mySalary)}</span></span>

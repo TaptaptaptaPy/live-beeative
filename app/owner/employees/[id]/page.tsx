@@ -85,6 +85,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
         id: emp.id, name: emp.name, salary: emp.salary,
         incentiveRate: emp.incentiveRate, isActive: emp.isActive,
         pinSet: emp.pinSet, profileImage: emp.profileImage ?? "",
+        showSalary: emp.showSalary,
       }} />
 
       {/* Leave summary */}

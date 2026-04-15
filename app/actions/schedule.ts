@@ -19,11 +19,19 @@ export async function createWorkSchedule(formData: FormData) {
   const date = formData.get("date") as string;
   const startTime = formData.get("startTime") as string;
   const endTime = formData.get("endTime") as string;
+  const platform = (formData.get("platform") as string) || null;
+  const brandId = (formData.get("brandId") as string) || null;
   const note = (formData.get("note") as string)?.trim() || null;
 
   if (!userId || !date || !startTime || !endTime) return { error: "กรุณากรอกข้อมูลให้ครบ" };
 
-  await prisma.workSchedule.create({ data: { userId, date, startTime, endTime, note } });
+  await prisma.workSchedule.create({
+    data: {
+      userId, date, startTime, endTime, note,
+      platform: platform as "TIKTOK" | "SHOPEE" | "FACEBOOK" | "OTHER" | null ?? undefined,
+      brandId: brandId || undefined,
+    },
+  });
 
   await logActivity({
     userId: session.userId, userName: session.name, userRole: session.role,

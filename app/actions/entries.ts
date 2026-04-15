@@ -24,6 +24,7 @@ export async function createEntry(formData: FormData) {
   const customStart = (formData.get("customStart") as string) || null;
   const customEnd = (formData.get("customEnd") as string) || null;
   const notes = (formData.get("notes") as string) || null;
+  const brandId = (formData.get("brandId") as string) || null;
 
   if (!platform || isNaN(salesAmount) || !date) {
     return { error: "กรุณากรอกข้อมูลให้ครบ" };
@@ -47,6 +48,7 @@ export async function createEntry(formData: FormData) {
     data: {
       userId: session.userId,
       sessionId: sessionId || null,
+      brandId: brandId || null,
       platform: platform as "TIKTOK" | "SHOPEE" | "FACEBOOK" | "OTHER",
       salesAmount,
       date,

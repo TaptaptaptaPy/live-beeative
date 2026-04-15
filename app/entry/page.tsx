@@ -10,6 +10,7 @@ import MyStats from "./MyStats";
 
 type LiveSession = { id: string; name: string; startTime: string; endTime: string };
 type SessionInfo = { name: string; role: string; profileImage: string | null };
+type Brand = { id: string; name: string; commissionRate: number; color: string };
 
 const PLATFORMS = [
   { value: "TIKTOK",   label: "TikTok",   emoji: "🎵" },
@@ -29,6 +30,8 @@ function getMinDate(role: string): string {
 export default function EntryPage() {
   const [sessions, setSessions] = useState<LiveSession[]>([]);
   const [userSession, setUserSession] = useState<SessionInfo | null>(null);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [brandId, setBrandId] = useState("");
   const [date, setDate] = useState(todayString());
   const [sessionId, setSessionId] = useState("");
   const [isCustomTime, setIsCustomTime] = useState(false);
@@ -44,6 +47,7 @@ export default function EntryPage() {
   useEffect(() => {
     fetch("/api/sessions").then(r => r.json()).then(setSessions).catch(() => {});
     fetch("/api/me").then(r => r.json()).then(setUserSession).catch(() => {});
+    fetch("/api/brands").then(r => r.json()).then(setBrands).catch(() => {});
   }, []);
 
   const today = todayString();
@@ -65,6 +69,7 @@ export default function EntryPage() {
     if (sessionId && !isCustomTime) fd.append("sessionId", sessionId);
     if (isCustomTime) { fd.append("customStart", customStart); fd.append("customEnd", customEnd); }
     if (notes) fd.append("notes", notes);
+    if (brandId) fd.append("brandId", brandId);
 
     const result = await createEntry(fd);
     if (result?.error) setError(result.error);
@@ -75,7 +80,7 @@ export default function EntryPage() {
   function resetForm() {
     setSessionId(""); setIsCustomTime(false); setCustomStart(""); setCustomEnd("");
     setPlatform(""); setSalesAmount(""); setNotes(""); setDate(todayString());
-    setError(""); setSuccess(false);
+    setBrandId(""); setError(""); setSuccess(false);
   }
 
   if (success) {
@@ -147,7 +152,7 @@ export default function EntryPage() {
 
       <form onSubmit={handleSubmit} className="p-4 space-y-4 max-w-lg mx-auto pb-24">
         {/* Date */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
           <label className="block text-[#1A1A1A] font-semibold mb-2">
             📅 วันที่
             {isBackdated && <span className="ml-2 text-sm text-orange-500 font-normal">(ย้อนหลัง)</span>}
@@ -162,20 +167,20 @@ export default function EntryPage() {
         </div>
 
         {/* Session */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
           <label className="block text-[#1A1A1A] font-semibold mb-3">⏰ ช่วงเวลาไลฟ์</label>
-          <div className="grid grid-cols-1 gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-2 snap-x -mx-1 px-1">
             {sessions.map(s => (
               <button key={s.id} type="button"
                 onClick={() => { setSessionId(s.id); setIsCustomTime(false); }}
-                className={`p-3 rounded-xl border-2 text-left transition-all ${sessionId === s.id && !isCustomTime ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200"}`}>
+                className={`flex-shrink-0 snap-start p-3 rounded-xl border-2 text-left transition-all min-w-[120px] ${sessionId === s.id && !isCustomTime ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200"}`}>
                 <div className="font-semibold text-[#1A1A1A]">{s.name}</div>
                 <div className="text-sm text-gray-500">{s.startTime} – {s.endTime} น.</div>
               </button>
             ))}
             <button type="button"
               onClick={() => { setIsCustomTime(true); setSessionId(""); }}
-              className={`p-3 rounded-xl border-2 text-left transition-all ${isCustomTime ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200"}`}>
+              className={`flex-shrink-0 snap-start p-3 rounded-xl border-2 text-left transition-all min-w-[120px] ${isCustomTime ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200"}`}>
               <div className="font-semibold text-[#1A1A1A]">กำหนดเวลาเอง</div>
               <div className="text-sm text-gray-500">ระบุช่วงเวลาเอง</div>
             </button>
@@ -197,21 +202,48 @@ export default function EntryPage() {
         </div>
 
         {/* Platform */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
           <label className="block text-[#1A1A1A] font-semibold mb-3">📱 Platform</label>
           <div className="grid grid-cols-2 gap-2">
             {PLATFORMS.map(p => (
               <button key={p.value} type="button" onClick={() => setPlatform(p.value)}
-                className={`p-3 rounded-xl border-2 flex items-center gap-2 transition-all ${platform === p.value ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200"}`}>
-                <span className="text-2xl">{p.emoji}</span>
+                className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${platform === p.value ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200"}`}>
+                <span className="text-3xl">{p.emoji}</span>
                 <span className="font-semibold text-[#1A1A1A]">{p.label}</span>
               </button>
             ))}
           </div>
         </div>
 
+        {/* Brand */}
+        {brands.length > 0 && (
+          <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
+            <label className="block text-[#1A1A1A] font-semibold mb-3">🏷️ แบรนด์ที่ขาย</label>
+
+            {/* ตัวเลือกยอดรวม (ไม่แยกแบรนด์) */}
+            <button type="button" onClick={() => setBrandId("")}
+              className={`w-full mb-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${!brandId ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200"}`}>
+              <div className="font-semibold text-[#1A1A1A]">📦 ยอดรวม (ไม่แยกแบรนด์)</div>
+              <div className="text-xs text-gray-400 mt-0.5">ใช้เมื่อขายหลายแบรนด์ในครั้งเดียว หรือไม่ทราบแบรนด์</div>
+            </button>
+
+            {/* แบรนด์เฉพาะ */}
+            <div className="text-xs text-gray-400 mb-2 font-medium">หรือเลือกแบรนด์เฉพาะ</div>
+            <div className="flex gap-2 flex-wrap">
+              {brands.map(b => (
+                <button key={b.id} type="button" onClick={() => setBrandId(b.id)}
+                  className={`px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all flex items-center gap-1.5 ${brandId === b.id ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200"}`}>
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: b.color }} />
+                  {b.name}
+                  <span className="text-gray-400 text-xs">{b.commissionRate}%</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Sales Amount */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
           <label className="block text-[#1A1A1A] font-semibold mb-2">💰 ยอดขาย (บาท)</label>
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">฿</span>
@@ -221,10 +253,17 @@ export default function EntryPage() {
               className="w-full border-2 border-gray-200 rounded-xl pl-9 pr-4 py-4 text-2xl font-bold focus:outline-none focus:border-[#F5D400]"
             />
           </div>
+          {salesAmount && <div className="text-right text-2xl font-bold text-green-600 mt-1">฿{parseFloat(salesAmount).toLocaleString("th-TH")}</div>}
+          {salesAmount && brandId && (() => {
+            const brand = brands.find(b => b.id === brandId);
+            if (!brand) return null;
+            const commission = parseFloat(salesAmount) * brand.commissionRate / 100;
+            return <div className="text-right text-sm text-green-600 mt-1">💰 commission ~฿{commission.toLocaleString("th-TH", { maximumFractionDigits: 0 })}</div>;
+          })()}
         </div>
 
         {/* Notes */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
           <label className="block text-[#1A1A1A] font-semibold mb-2">📝 หมายเหตุ (ถ้ามี)</label>
           <textarea value={notes} onChange={e => setNotes(e.target.value)}
             placeholder="เช่น ยอดรวม 2 แพลตฟอร์ม, มีโปรโมชั่น..." rows={2}

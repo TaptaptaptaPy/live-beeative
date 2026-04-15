@@ -1,128 +1,118 @@
-# คู่มือ Deploy Live Manager
+# คู่มือ Deploy บน Vercel
 
-## วิธี Deploy ง่ายๆ บน Railway (แนะนำ)
-
-Railway เป็น platform ที่รวม App + Database ในที่เดียว ค่าบริการเริ่มต้นประมาณ $5/เดือน เข้าใช้งานผ่าน URL บนมือถือหรือคอมได้เลย ไม่ต้องลง App
+Vercel เป็น platform ที่ทำงานกับ Next.js ได้ดีที่สุด (บริษัทเดียวกัน) เข้าใช้งานผ่าน URL บนมือถือหรือคอมได้เลย ไม่ต้องลง App
 
 ---
 
-### ขั้นตอนที่ 1: สร้าง GitHub Repository
+## ขั้นตอนที่ 1 — Push โค้ดขึ้น GitHub
 
-1. ไปที่ https://github.com และสมัครบัญชีฟรี (ถ้ายังไม่มี)
-2. สร้าง Repository ใหม่ ชื่อ `live-manager` (Private)
-3. เปิด Terminal (หรือ Command Prompt) แล้วพิมพ์:
+เปิด Terminal แล้วพิมพ์:
 
 ```bash
 cd "/Users/toptap/My Project/live-manager"
-git init
 git add .
-git commit -m "Initial commit"
-git remote add origin https://github.com/YOUR_USERNAME/live-manager.git
-git push -u origin main
+git commit -m "update"
+git push origin main
 ```
 
 ---
 
-### ขั้นตอนที่ 2: สร้าง Railway Project
+## ขั้นตอนที่ 2 — เชื่อม GitHub กับ Vercel
 
-1. ไปที่ https://railway.app และ Login ด้วย GitHub
-2. คลิก **New Project**
-3. เลือก **Deploy from GitHub repo**
-4. เลือก repo `live-manager` ที่สร้างไว้
-5. Railway จะเริ่ม deploy อัตโนมัติ
-
----
-
-### ขั้นตอนที่ 3: เพิ่ม PostgreSQL Database
-
-1. ใน Railway project ของคุณ คลิก **+ New**
-2. เลือก **Database** → **PostgreSQL**
-3. Railway จะสร้าง database และให้ `DATABASE_URL` อัตโนมัติ
+1. ไปที่ [vercel.com](https://vercel.com) → Login ด้วย GitHub
+2. คลิก **Add New → Project**
+3. เลือก repo **live-beeative**
+4. Framework ตรวจจับ **Next.js** อัตโนมัติ — ไม่ต้องแก้อะไร
+5. **อย่ากด Deploy ยัง** — ไปทำขั้นตอน 3 ก่อน
 
 ---
 
-### ขั้นตอนที่ 4: ตั้งค่า Environment Variables
+## ขั้นตอนที่ 3 — ตั้งค่า Environment Variables
 
-ใน Railway → ไปที่ service `live-manager` → แท็บ **Variables** → เพิ่มตัวแปรต่อไปนี้:
+ใน Vercel → หน้า Configure Project → แท็บ **Environment Variables**
+
+เพิ่มตัวแปรต่อไปนี้ทีละอัน:
 
 | Variable | ค่า |
 |---|---|
-| `DATABASE_URL` | คัดลอกจาก PostgreSQL service (Railway จะ link ให้อัตโนมัติ) |
+| `DATABASE_URL` | (คัดลอกจาก Neon dashboard — เป็น URL ที่ขึ้นต้นด้วย `postgresql://`) |
 | `SESSION_SECRET` | `ZQOzB8tCqgYU4RYYgxTy9cpoZvORc1YzZ6cntejaS7A=` |
-| `OWNER_EMAIL` | อีเมลเจ้าของร้าน เช่น `boss@myshop.com` |
-| `OWNER_PASSWORD` | รหัสผ่านเจ้าของ เช่น `MyShop2024!` |
+| `OWNER_EMAIL` | `wannabeeinspired@gmail.com` |
+| `OWNER_PASSWORD` | รหัสผ่านของเจ้าของ |
 
-> **หมายเหตุ:** เปลี่ยน SESSION_SECRET ด้วยการรัน `openssl rand -base64 32` ใน terminal
-
----
-
-### ขั้นตอนที่ 5: Run Database Migration
-
-ใน Railway → service `live-manager` → แท็บ **Shell** → พิมพ์:
-
-```bash
-npx prisma migrate deploy
-```
+> **หา DATABASE_URL จาก Neon ได้ที่:**  
+> [console.neon.tech](https://console.neon.tech) → เลือก Project → แท็บ **Connection Details** → คัดลอก Connection string
 
 ---
 
-### ขั้นตอนที่ 6: Seed ข้อมูลเริ่มต้น
+## ขั้นตอนที่ 4 — Deploy
 
-หลัง deploy เสร็จ เปิด URL ของ app แล้วไปที่:
-```
-https://YOUR-APP.railway.app/api/seed
-```
-ด้วย method POST (ใช้ curl หรือ Postman):
-```bash
-curl -X POST https://YOUR-APP.railway.app/api/seed
-```
-**หรือ** เพิ่ม seed button ผ่าน browser extension
+คลิกปุ่ม **Deploy** ใน Vercel รอประมาณ **2–3 นาที**
 
-ระบบจะสร้าง:
-- บัญชีเจ้าของ (ใช้ email/password ที่ตั้งไว้)
-- ช่วงเวลาไลฟ์เริ่มต้น (เช้า/เย็น/ดึก)
+Vercel จะรัน `prisma generate && next build` ให้อัตโนมัติ
+
+---
+
+## ขั้นตอนที่ 5 — Seed ข้อมูลครั้งแรก (ทำครั้งเดียว)
+
+หลัง deploy เสร็จ เปิด URL ที่ Vercel ให้ แล้วไปที่:
+
+```
+https://YOUR-APP.vercel.app/api/seed
+```
+
+เปิดใน browser ได้เลย (GET request) ระบบจะสร้าง:
+- บัญชีเจ้าของ (ใช้ OWNER_EMAIL / OWNER_PASSWORD ที่ตั้งไว้)
+- ช่วงเวลาไลฟ์เริ่มต้น (เช้า / กลางวัน / เย็น / ดึก)
 - กฎ Incentive เริ่มต้น 1%
 
----
-
-### ขั้นตอนที่ 7: ใช้งาน!
-
-Railway จะให้ URL เช่น `https://live-manager-production.up.railway.app`
-
-- **พนักงาน**: เปิด URL นี้ → เลือกชื่อ → ใส่ PIN → กรอกยอดขาย
-- **เจ้าของ**: ไปที่ `URL/owner/login` → ใส่ email/password
-
-> **แนะนำ**: Add URL ไปที่ Home Screen มือถือ (iOS/Android) เพื่อเปิดได้เหมือน App
+> ถ้าเคย Seed ไปแล้ว ข้ามขั้นตอนนี้
 
 ---
 
-## การใช้งานครั้งแรก
+## ขั้นตอนที่ 6 — ใช้งาน!
+
+Vercel จะให้ URL เช่น `https://live-beeative.vercel.app`
+
+| ผู้ใช้ | URL |
+|---|---|
+| พนักงาน | `https://YOUR-APP.vercel.app` |
+| เจ้าของ | `https://YOUR-APP.vercel.app/owner/login` |
+
+> **แนะนำ:** Add URL ไปที่ Home Screen มือถือ (iOS: Share → Add to Home Screen / Android: เมนู 3 จุด → Add to Home Screen) เปิดได้เหมือน App เลย
+
+---
+
+## การ Deploy ครั้งต่อไป (Auto)
+
+เมื่อ push โค้ดขึ้น GitHub → Vercel deploy ให้อัตโนมัติทุกครั้ง
+
+```bash
+git add .
+git commit -m "อธิบายการเปลี่ยนแปลง"
+git push origin main
+```
+
+รอ 2–3 นาที → ใช้งานได้เลย
+
+---
+
+## ใช้งานครั้งแรก
 
 1. เจ้าของ Login ที่ `/owner/login`
-2. ไปที่ **พนักงาน** → เพิ่มชื่อพนักงานและตั้ง PIN
-3. ไปที่ **ช่วงเวลา** → ปรับเวลาไลฟ์ตามต้องการ
-4. บอก URL ให้พนักงาน → พนักงานเลือกชื่อ ใส่ PIN → กรอกยอดได้เลย
+2. ไปที่ **พนักงาน** → เพิ่มชื่อพนักงาน (ไม่ต้องตั้ง PIN — พนักงานตั้งเองในครั้งแรกที่ Login)
+3. ไปที่ **ตาราง** → ลงตารางไลฟ์ให้พนักงาน
+4. บอก URL ให้พนักงาน → เลือกชื่อ → ตั้ง PIN → กรอกยอดได้เลย
 
 ---
 
-## การตั้ง PIN เพิ่มเติม
+## ค่าใช้จ่าย Vercel
 
-PIN ของพนักงานตั้งได้ตอนเพิ่มพนักงาน (4 ตัวเลข) เช่น 1234, 5678
-ถ้าต้องการเปลี่ยน PIN ต้องเพิ่มฟีเจอร์ Edit Employee (roadmap)
+| Plan | ราคา | เหมาะกับ |
+|---|---|---|
+| Hobby (ฟรี) | $0 | ทดสอบ / ใช้งานเบาๆ |
+| Pro | $20/เดือน | Production จริง ทีม < 50 คน |
 
----
+สำหรับทีมเล็ก (< 10 คน) **Hobby plan ฟรีใช้ได้เลย**
 
-## ค่าใช้จ่าย Railway
-
-- **Starter Plan**: ฟรี (มี limit)  
-- **Pro Plan**: $5/เดือน (แนะนำสำหรับ production)
-
-สำหรับ startup ขนาดเล็ก (< 10 พนักงาน) Starter Plan น่าจะเพียงพอ
-
----
-
-## โปรแกรมเสริม (แนะนำ อนาคต)
-
-- **LINE Notify**: แจ้งเจ้าของเมื่อพนักงานกรอกยอด (เพิ่มใน `/app/actions/entries.ts`)
-- **Export Excel**: ส่งออก Incentive เป็น Excel รายเดือน
-- **PWA Icon**: เพิ่ม icon ให้ add to home screen สวยขึ้น
+> **Neon DB ฟรี tier:** รองรับ 0.5 GB storage, 190 compute hours/เดือน — เพียงพอสำหรับทีมเล็ก

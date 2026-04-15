@@ -9,6 +9,7 @@ import TodayBadge from "./TodayBadge";
 const NAV = [
   { href: "/owner/dashboard",  label: "ภาพรวม",  emoji: "📊" },
   { href: "/owner/schedule",   label: "ตาราง",   emoji: "📅" },
+  { href: "/owner/brands",     label: "แบรนด์",  emoji: "🏷️" },
   { href: "/owner/targets",    label: "เป้ายอด",  emoji: "🎯" },
   { href: "/owner/employees",  label: "พนักงาน",  emoji: "👥" },
   { href: "/owner/leave",      label: "วันลา",   emoji: "🏖️" },

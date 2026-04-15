@@ -17,25 +17,21 @@ export async function upsertSalesTarget(formData: FormData) {
   const session = await requireOwner();
   if (!session) return { error: "ไม่มีสิทธิ์" };
 
-  const month = formData.get("month") as string; // YYYY-MM
+  const period = formData.get("period") as "DAILY" | "WEEKLY" | "MONTHLY";
+  const dateKey = formData.get("dateKey") as string;
   const userId = (formData.get("userId") as string) || null;
   const amount = parseFloat(formData.get("amount") as string);
 
-  if (!month || isNaN(amount) || amount < 0) return { error: "ข้อมูลไม่ถูกต้อง" };
+  if (!dateKey || !period || isNaN(amount) || amount < 0) return { error: "ข้อมูลไม่ถูกต้อง" };
 
-  // Prisma upsert ไม่รองรับ null ใน unique key — ใช้ findFirst + create/update แทน
-  const existing = await prisma.salesTarget.findFirst({ where: { month, userId } });
+  const existing = await prisma.salesTarget.findFirst({ where: { period, dateKey, userId } });
   if (existing) {
     await prisma.salesTarget.update({ where: { id: existing.id }, data: { amount } });
   } else {
-    await prisma.salesTarget.create({ data: { month, userId, amount } });
+    await prisma.salesTarget.create({ data: { period, dateKey, userId, amount } });
   }
 
-  await logActivity({
-    userId: session.userId, userName: session.name, userRole: session.role,
-    action: "TARGET_UPDATE",
-    details: JSON.stringify({ month, userId: userId ?? "ทีม", amount }),
-  });
+  await logActivity({ userId: session.userId, userName: session.name, userRole: session.role, action: "TARGET_UPDATE", details: JSON.stringify({ period, dateKey, userId: userId ?? "ทีม", amount }) });
 
   revalidatePath("/owner/targets");
   revalidatePath("/owner/dashboard");

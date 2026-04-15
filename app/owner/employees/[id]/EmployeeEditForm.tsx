@@ -7,7 +7,7 @@ import { useState, useRef } from "react";
 type Props = {
   employee: {
     id: string; name: string; salary: number; incentiveRate: number;
-    isActive: boolean; pinSet: boolean; profileImage: string;
+    isActive: boolean; pinSet: boolean; profileImage: string; showSalary: boolean;
   };
 };
 
@@ -128,6 +128,25 @@ export default function EmployeeEditForm({ employee: emp }: Props) {
                 className={`flex-1 text-center p-2 rounded-xl border-2 cursor-pointer text-sm transition-all`}>
                 <input type="radio" name="isActive" value={opt.value}
                   defaultChecked={String(emp.isActive) === opt.value}
+                  className="sr-only" />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Show Salary */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">แสดงเงินเดือน/Incentive ให้พนักงานเห็น</label>
+          <div className="flex gap-3">
+            {[
+              { value: "true", label: "👁️ แสดง" },
+              { value: "false", label: "🙈 ซ่อน" },
+            ].map(opt => (
+              <label key={opt.value}
+                className={`flex-1 text-center p-2 rounded-xl border-2 cursor-pointer text-sm transition-all`}>
+                <input type="radio" name="showSalary" value={opt.value}
+                  defaultChecked={String(emp.showSalary) === opt.value}
                   className="sr-only" />
                 {opt.label}
               </label>

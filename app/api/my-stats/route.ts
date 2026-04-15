@@ -14,7 +14,7 @@ export async function GET() {
   // All employees for ranking
   const employees = await prisma.user.findMany({
     where: { role: "EMPLOYEE", isActive: true, deletedAt: null },
-    select: { id: true, name: true, incentiveRate: true, salary: true },
+    select: { id: true, name: true, incentiveRate: true, salary: true, showSalary: true },
   });
 
   // Monthly entries for all employees (for ranking)
@@ -43,10 +43,11 @@ export async function GET() {
 
   // Sales target for this month (personal or team)
   const [personalTarget, teamTarget] = await Promise.all([
-    prisma.salesTarget.findFirst({ where: { month, userId: session.userId } }),
-    prisma.salesTarget.findFirst({ where: { month, userId: null } }),
+    prisma.salesTarget.findFirst({ where: { period: "MONTHLY", dateKey: month, userId: session.userId } }),
+    prisma.salesTarget.findFirst({ where: { period: "MONTHLY", dateKey: month, userId: null } }),
   ]);
   const targetAmount = personalTarget?.amount ?? teamTarget?.amount ?? 0;
+  const showSalary = me?.showSalary ?? false;
 
   return NextResponse.json({
     month,
@@ -58,5 +59,6 @@ export async function GET() {
     mySalary,
     targetAmount,
     entryCount: myEntries.length,
+    showSalary,
   });
 }

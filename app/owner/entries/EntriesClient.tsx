@@ -10,6 +10,7 @@ type Entry = {
   notes: string | null; isBackdated: boolean; createdAt: string;
   userName: string; sessionName: string | null;
   customStart: string | null; customEnd: string | null;
+  brandName: string | null; brandColor: string | null;
 };
 
 type Props = {
@@ -123,6 +124,12 @@ export default function EntriesClient({ entries, employees, totalSales, filters 
                     <span className="text-xs bg-[#FFF8CC] text-[#1A1A1A] px-2 py-0.5 rounded-full">
                       {PLATFORM_LABELS[entry.platform]}
                     </span>
+                    {entry.brandName && (
+                      <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: entry.brandColor ? entry.brandColor + "22" : "#f3f4f6" }}>
+                        <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: entry.brandColor ?? "#ccc" }} />
+                        {entry.brandName}
+                      </span>
+                    )}
                     {entry.isBackdated && (
                       <span className="text-xs text-orange-400">(ย้อนหลัง)</span>
                     )}
