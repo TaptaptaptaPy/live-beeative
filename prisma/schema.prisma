@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String      @id @default(cuid())
+  name          String
+  role          Role        @default(EMPLOYEE)
+  pin           String?
+  email         String?     @unique
+  password      String?
+  isActive      Boolean     @default(true)
+  incentiveRate Float       @default(1.0)
+  entries       TimeEntry[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model LiveSession {
+  id        String      @id @default(cuid())
+  name      String
+  startTime String
+  endTime   String
+  isActive  Boolean     @default(true)
+  sortOrder Int         @default(0)
+  entries   TimeEntry[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model TimeEntry {
+  id          String       @id @default(cuid())
+  userId      String
+  sessionId   String?
+  platform    Platform
+  salesAmount Float
+  date        String
+  notes       String?
+  customStart String?
+  customEnd   String?
+  user        User         @relation(fields: [userId], references: [id])
+  session     LiveSession? @relation(fields: [sessionId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model IncentiveRule {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        RuleType
+  value       Float
+  minSales    Float?
+  maxSales    Float?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Role {
+  OWNER
+  EMPLOYEE
+}
+
+enum Platform {
+  TIKTOK
+  SHOPEE
+  FACEBOOK
+  OTHER
+}
+
+enum RuleType {
+  PERCENTAGE
+  FIXED
+  BONUS
+}
