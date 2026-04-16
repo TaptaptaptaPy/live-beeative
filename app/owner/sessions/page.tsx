@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import AddSessionForm from "./AddSessionForm";
 import DeleteSessionButton from "./DeleteSessionButton";
+import MigrateButton from "./MigrateButton";
 
 export default async function SessionsPage() {
   const sessions = await prisma.liveSession.findMany({
@@ -14,6 +15,7 @@ export default async function SessionsPage() {
       <h1 className="text-2xl font-bold text-gray-800 pt-2">ช่วงเวลาไลฟ์</h1>
       <p className="text-sm text-gray-500">กำหนดช่วงเวลาไลฟ์ที่พนักงานสามารถเลือกได้</p>
 
+      <MigrateButton />
       <AddSessionForm />
 
       <div className="space-y-3">
