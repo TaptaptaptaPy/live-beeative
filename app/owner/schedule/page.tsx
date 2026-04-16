@@ -252,7 +252,10 @@ export default async function SchedulePage({
           let dayMismatches = 0;
           for (const s of slots) {
             const summary = userDaySummary[`${date}__${s.userId}`];
-            if (!summary) { if (isPast || date === today) dayMismatches++; continue; }
+            const otherEntries = actualEntries.filter(eg => eg.userId !== s.userId);
+            // พนักงานไม่ตรง: คนที่วางแผนไม่ได้บันทึก แต่มีคนอื่นบันทึกแทน
+            if (!summary && (isPast || date === today) && otherEntries.length > 0) { dayMismatches++; continue; }
+            if (!summary) continue;
             if (s.platform && !summary.platforms.has(s.platform)) dayMismatches++;
             if (s.brandId && !summary.brandIds.has(s.brandId)) dayMismatches++;
             if (summary.timePairs.length > 0 &&
@@ -294,13 +297,14 @@ export default async function SchedulePage({
                     // Mismatch detection
                     const platformMismatch = s.platform && hasActual && !summary.platforms.has(s.platform);
                     const brandMismatch = s.brandId && hasActual && !summary.brandIds.has(s.brandId);
-                    // เวลาไม่ตรง: มีเวลาบันทึกจริง แต่ไม่มีอันไหนตรงกับแผน
                     const timeMismatch = hasActual &&
                       summary.timePairs.length > 0 &&
-                      !summary.timePairs.some(
-                        (t) => t.start === s.startTime && t.end === s.endTime
-                      );
-                    const hasMismatch = platformMismatch || brandMismatch || timeMismatch;
+                      !summary.timePairs.some(t => t.start === s.startTime && t.end === s.endTime);
+                    // พนักงานไม่ตรง: คนที่วางแผนไม่ได้บันทึกเลย แต่มีคนอื่นบันทึกแทน
+                    const otherActualUsers = actualEntries.filter(eg => eg.userId !== s.userId);
+                    const uniqueSubstitutes = [...new Map(otherActualUsers.map(eg => [eg.userId, eg.userName])).values()];
+                    const employeeMismatch = (isPast || date === today) && !hasActual && uniqueSubstitutes.length > 0;
+                    const hasMismatch = platformMismatch || brandMismatch || timeMismatch || employeeMismatch;
 
                     // What actually happened
                     const actualPlatforms = summary ? [...summary.platforms] : [];
@@ -314,9 +318,17 @@ export default async function SchedulePage({
                         className={`px-4 py-3 ${hasMismatch ? "bg-orange-50 border-l-4 border-orange-300" : "bg-[#FFFBEB]"}`}>
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                            <Avatar user={s.user as { name: string; profileImage?: string | null }} />
+                            <div className="relative flex-shrink-0">
+                              <Avatar user={s.user as { name: string; profileImage?: string | null }} />
+                              {employeeMismatch && (
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold">!</div>
+                              )}
+                            </div>
                             <div className="flex-1 min-w-0">
-                              <div className="font-medium text-[#1A1A1A] text-sm">{s.user.name}</div>
+                              <div className={`font-medium text-sm flex items-center gap-1.5 ${employeeMismatch ? "text-gray-400 line-through" : "text-[#1A1A1A]"}`}>
+                                {s.user.name}
+                                {employeeMismatch && <span className="no-underline text-orange-500 font-semibold" style={{ textDecoration: "none" }}>→ {uniqueSubstitutes.join(", ")}</span>}
+                              </div>
 
                               {/* แผน */}
                               <div className="text-xs text-gray-500 flex items-center gap-1.5 flex-wrap mt-0.5">
@@ -370,6 +382,9 @@ export default async function SchedulePage({
                               {/* Mismatch explanation */}
                               {hasMismatch && (
                                 <div className="mt-1.5 text-[10px] text-orange-600 bg-orange-100 rounded-lg px-2 py-1 space-y-0.5">
+                                  {employeeMismatch && (
+                                    <div>👤 พนักงานไม่ตรง: วางแผน {s.user.name} แต่บันทึกโดย {uniqueSubstitutes.join(", ")}</div>
+                                  )}
                                   {timeMismatch && (
                                     <div>⏰ เวลาไม่ตรง: วางแผน {s.startTime}–{s.endTime} แต่บันทึกจริง {summary!.timePairs.map(t => `${t.start}–${t.end}`).join(", ")}</div>
                                   )}
