@@ -32,9 +32,18 @@ type EntryGroup = {
   platform: string;
   salesAmount: number;
   count: number;
+  brandId: string | null;
   brandName: string | null;
   brandColor: string | null;
   timeLabel: string | null;
+};
+
+// Raw snapshot per user per day — for mismatch detection
+type UserDaySummary = {
+  platforms: Set<string>;
+  brandIds: Set<string | null>;
+  totalSales: number;
+  totalCount: number;
 };
 
 export default async function SchedulePage({
@@ -51,10 +60,7 @@ export default async function SchedulePage({
   const weekEnd = weekDates[6];
 
   const [employees, schedules, brands, entries] = await Promise.all([
-    prisma.user.findMany({
-      where: { role: "EMPLOYEE", isActive: true },
-      orderBy: { name: "asc" },
-    }),
+    prisma.user.findMany({ where: { role: "EMPLOYEE", isActive: true }, orderBy: { name: "asc" } }),
     prisma.workSchedule.findMany({
       where: {
         date: { gte: weekDates[0], lte: weekEnd },
@@ -63,11 +69,7 @@ export default async function SchedulePage({
       include: { user: true, brand: true },
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
     }),
-    prisma.brand.findMany({
-      where: { isActive: true },
-      select: { id: true, name: true, color: true },
-    }),
-    // fetch full entry data with user + brand
+    prisma.brand.findMany({ where: { isActive: true }, select: { id: true, name: true, color: true } }),
     prisma.timeEntry.findMany({
       where: {
         date: { gte: weekDates[0], lte: weekEnd },
@@ -75,7 +77,7 @@ export default async function SchedulePage({
       },
       include: {
         user: { select: { id: true, name: true, profileImage: true } },
-        brand: { select: { name: true, color: true } },
+        brand: { select: { id: true, name: true, color: true } },
         session: { select: { name: true } },
       },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
@@ -87,21 +89,17 @@ export default async function SchedulePage({
   for (const d of weekDates) scheduledByDate[d] = [];
   for (const s of schedules) scheduledByDate[s.date]?.push(s);
 
-  // Group entries by date → userId → aggregated
-  // Each unique (date, userId, platform) = one row
+  // EntryGroups by date (for display)
   const entriesByDate: Record<string, EntryGroup[]> = {};
   for (const d of weekDates) entriesByDate[d] = [];
 
-  // Temp accumulator: date__userId__platform → group
   const acc: Record<string, EntryGroup> = {};
   for (const e of entries) {
     const key = `${e.date}__${e.userId}__${e.platform}`;
     if (!acc[key]) {
-      // build time label from session or custom times
       let timeLabel: string | null = null;
       if (e.session) timeLabel = e.session.name;
       else if (e.customStart && e.customEnd) timeLabel = `${e.customStart}–${e.customEnd}`;
-
       acc[key] = {
         userId: e.userId,
         userName: e.user.name,
@@ -109,6 +107,7 @@ export default async function SchedulePage({
         platform: e.platform,
         salesAmount: 0,
         count: 0,
+        brandId: e.brandId,
         brandName: e.brand?.name ?? null,
         brandColor: e.brand?.color ?? null,
         timeLabel,
@@ -117,13 +116,25 @@ export default async function SchedulePage({
     acc[key].salesAmount += e.salesAmount;
     acc[key].count += 1;
   }
-
   for (const [key, group] of Object.entries(acc)) {
     const date = key.split("__")[0];
-    if (entriesByDate[date]) entriesByDate[date].push(group);
+    entriesByDate[date]?.push(group);
   }
 
-  // Set of userIds who have planned slots per date (to detect "unplanned" entries)
+  // Raw summary per date+userId — for mismatch detection
+  const userDaySummary: Record<string, UserDaySummary> = {};
+  for (const e of entries) {
+    const key = `${e.date}__${e.userId}`;
+    if (!userDaySummary[key]) {
+      userDaySummary[key] = { platforms: new Set(), brandIds: new Set(), totalSales: 0, totalCount: 0 };
+    }
+    userDaySummary[key].platforms.add(e.platform);
+    userDaySummary[key].brandIds.add(e.brandId);
+    userDaySummary[key].totalSales += e.salesAmount;
+    userDaySummary[key].totalCount += 1;
+  }
+
+  // Planned users per date
   const plannedUsersByDate: Record<string, Set<string>> = {};
   for (const d of weekDates) plannedUsersByDate[d] = new Set();
   for (const s of schedules) plannedUsersByDate[s.date]?.add(s.userId);
@@ -134,13 +145,11 @@ export default async function SchedulePage({
   const daysWithEntries = new Set(entries.map((e) => e.date)).size;
 
   function prevWeek() {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() - 7);
+    const d = new Date(weekStart); d.setDate(d.getDate() - 7);
     return d.toISOString().slice(0, 10);
   }
   function nextWeek() {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + 7);
+    const d = new Date(weekStart); d.setDate(d.getDate() + 7);
     return d.toISOString().slice(0, 10);
   }
   function buildUrl(overrides: Record<string, string>) {
@@ -148,11 +157,7 @@ export default async function SchedulePage({
     return `/owner/schedule?${p.toString()}`;
   }
   function fmt(n: number) {
-    return new Intl.NumberFormat("th-TH", {
-      style: "currency",
-      currency: "THB",
-      maximumFractionDigits: 0,
-    }).format(n);
+    return new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 0 }).format(n);
   }
 
   return (
@@ -225,17 +230,24 @@ export default async function SchedulePage({
           const isPast = date < today;
           const hasAnything = slots.length > 0 || actualEntries.length > 0;
 
-          // entries by userId for quick lookup (for matching with planned slots)
           const actualByUser: Record<string, EntryGroup[]> = {};
           for (const eg of actualEntries) {
             if (!actualByUser[eg.userId]) actualByUser[eg.userId] = [];
             actualByUser[eg.userId].push(eg);
           }
 
-          // entries with NO planned slot
           const unplannedEntries = actualEntries.filter(
             (eg) => !plannedUsersByDate[date]?.has(eg.userId)
           );
+
+          // Count mismatches for day header
+          let dayMismatches = 0;
+          for (const s of slots) {
+            const summary = userDaySummary[`${date}__${s.userId}`];
+            if (!summary) { if (isPast || date === today) dayMismatches++; continue; }
+            if (s.platform && !summary.platforms.has(s.platform)) dayMismatches++;
+            if (s.brandId && !summary.brandIds.has(s.brandId)) dayMismatches++;
+          }
 
           return (
             <div key={date} className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -246,9 +258,14 @@ export default async function SchedulePage({
                   <span className="text-gray-400 text-sm">{date}</span>
                   {date === today && <span className="text-xs text-[#F5A882] font-semibold">วันนี้</span>}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                  {slots.length > 0 && <span>📋 {slots.length} แผน</span>}
-                  {actualEntries.length > 0 && <span>✅ {actualEntries.length} รายการ</span>}
+                <div className="flex items-center gap-2 text-xs">
+                  {slots.length > 0 && <span className="text-gray-400">📋 {slots.length} แผน</span>}
+                  {actualEntries.length > 0 && <span className="text-gray-400">✅ {actualEntries.length} จริง</span>}
+                  {dayMismatches > 0 && (
+                    <span className="bg-orange-100 text-orange-600 font-semibold px-2 py-0.5 rounded-full">
+                      ⚠️ {dayMismatches} ไม่ตรง
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -257,47 +274,103 @@ export default async function SchedulePage({
               ) : (
                 <div className="divide-y divide-gray-50">
 
-                  {/* ── แผนล่วงหน้า ── */}
+                  {/* ── แผนล่วงหน้า + เปรียบกับจริง ── */}
                   {slots.map((s) => {
+                    const summary = userDaySummary[`${date}__${s.userId}`];
                     const userActuals = actualByUser[s.userId] ?? [];
-                    const totalSales = userActuals.reduce((sum, g) => sum + g.salesAmount, 0);
-                    const totalCount = userActuals.reduce((sum, g) => sum + g.count, 0);
-                    const hasActual = userActuals.length > 0;
+                    const hasActual = !!summary;
+
+                    // Mismatch detection
+                    const platformMismatch = s.platform && hasActual && !summary.platforms.has(s.platform);
+                    const brandMismatch = s.brandId && hasActual && !summary.brandIds.has(s.brandId);
+                    const hasMismatch = platformMismatch || brandMismatch;
+
+                    // What actually happened
+                    const actualPlatforms = summary ? [...summary.platforms] : [];
+                    const actualBrandNames = userActuals
+                      .filter((g) => g.brandName)
+                      .map((g) => ({ name: g.brandName!, color: g.brandColor }))
+                      .filter((v, i, arr) => arr.findIndex((x) => x.name === v.name) === i);
 
                     return (
-                      <div key={s.id} className="px-4 py-3 bg-[#FFFBEB]">
+                      <div key={s.id}
+                        className={`px-4 py-3 ${hasMismatch ? "bg-orange-50 border-l-4 border-orange-300" : "bg-[#FFFBEB]"}`}>
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
                             <Avatar user={s.user as { name: string; profileImage?: string | null }} />
-                            <div>
+                            <div className="flex-1 min-w-0">
                               <div className="font-medium text-[#1A1A1A] text-sm">{s.user.name}</div>
+
+                              {/* แผน */}
                               <div className="text-xs text-gray-500 flex items-center gap-1.5 flex-wrap mt-0.5">
-                                <span className="text-[#F5A882] font-medium">📋 แผน</span>
+                                <span className="text-[#F5A882] font-semibold">📋 แผน:</span>
                                 <span>⏰ {s.startTime}–{s.endTime}</span>
                                 {s.platform && (
-                                  <span>{PLATFORM_EMOJI[s.platform]} {PLATFORM_LABELS[s.platform]}</span>
+                                  <span className={platformMismatch ? "line-through text-gray-300" : ""}>
+                                    {PLATFORM_EMOJI[s.platform]} {PLATFORM_LABELS[s.platform]}
+                                  </span>
                                 )}
                                 {s.brand && (
-                                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium"
+                                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${brandMismatch ? "opacity-40 line-through" : ""}`}
                                     style={{ background: (s.brand.color ?? "#ccc") + "22", color: s.brand.color ?? "#555" }}>
                                     {s.brand.name}
                                   </span>
                                 )}
                                 {s.note && <span className="text-gray-400">· {s.note}</span>}
                               </div>
+
+                              {/* จริง (แสดงเสมอถ้าผ่านวันนั้นแล้ว) */}
+                              {(isPast || date === today) && hasActual && (
+                                <div className="text-xs flex items-center gap-1.5 flex-wrap mt-1">
+                                  <span className={`font-semibold ${hasMismatch ? "text-orange-500" : "text-green-600"}`}>
+                                    {hasMismatch ? "⚠️ จริง:" : "✅ จริง:"}
+                                  </span>
+                                  {actualPlatforms.map((p) => (
+                                    <span key={p} className={`flex items-center gap-0.5 ${platformMismatch && s.platform !== p ? "text-orange-600 font-semibold" : "text-gray-600"}`}>
+                                      {PLATFORM_EMOJI[p]} {PLATFORM_LABELS[p]}
+                                    </span>
+                                  ))}
+                                  {actualBrandNames.map((b) => (
+                                    <span key={b.name}
+                                      className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${brandMismatch && s.brand?.name !== b.name ? "ring-1 ring-orange-400" : ""}`}
+                                      style={{ background: (b.color ?? "#ccc") + "22", color: b.color ?? "#555" }}>
+                                      {b.name}
+                                    </span>
+                                  ))}
+                                  {actualBrandNames.length === 0 && summary.brandIds.has(null) && (
+                                    <span className="text-gray-400 text-[10px]">ไม่ระบุแบรนด์</span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Mismatch explanation */}
+                              {hasMismatch && (
+                                <div className="mt-1.5 text-[10px] text-orange-600 bg-orange-100 rounded-lg px-2 py-1 flex flex-wrap gap-x-2">
+                                  {platformMismatch && (
+                                    <span>Platform ไม่ตรง: วางแผน {PLATFORM_LABELS[s.platform!]} แต่ไลฟ์จริง {actualPlatforms.map(p => PLATFORM_LABELS[p]).join(", ")}</span>
+                                  )}
+                                  {brandMismatch && (
+                                    <span>แบรนด์ไม่ตรง: วางแผน {s.brand?.name} แต่ขายจริง {actualBrandNames.map(b => b.name).join(", ") || "ไม่ระบุแบรนด์"}</span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {isPast || date === today ? (
+
+                          {/* ยอดขายจริง */}
+                          <div className="flex items-start gap-2 flex-shrink-0">
+                            {(isPast || date === today) && (
                               hasActual ? (
                                 <div className="text-right">
-                                  <div className="text-xs text-green-600 font-semibold">{fmt(totalSales)}</div>
-                                  <div className="text-[10px] text-green-400">{totalCount} รายการ ✓</div>
+                                  <div className={`text-sm font-bold ${hasMismatch ? "text-orange-500" : "text-green-600"}`}>
+                                    {fmt(summary.totalSales)}
+                                  </div>
+                                  <div className="text-[10px] text-gray-400">{summary.totalCount} รายการ</div>
                                 </div>
                               ) : (
                                 <span className="text-xs text-gray-300 italic">ยังไม่บันทึก</span>
                               )
-                            ) : null}
+                            )}
                             <DeleteScheduleButton id={s.id} />
                           </div>
                         </div>
@@ -314,7 +387,7 @@ export default async function SchedulePage({
                           <div>
                             <div className="font-medium text-[#1A1A1A] text-sm">{eg.userName}</div>
                             <div className="text-xs text-gray-500 flex items-center gap-1.5 flex-wrap mt-0.5">
-                              <span className="text-green-600 font-medium">✅ บันทึกแล้ว</span>
+                              <span className="text-green-600 font-medium">✅ บันทึก (ไม่มีแผน)</span>
                               {eg.timeLabel && <span>⏰ {eg.timeLabel}</span>}
                               <span>{PLATFORM_EMOJI[eg.platform]} {PLATFORM_LABELS[eg.platform]}</span>
                               {eg.brandName && (
@@ -334,29 +407,6 @@ export default async function SchedulePage({
                     </div>
                   ))}
 
-                  {/* ── บันทึกจริง ของคนที่มีแผน (แสดงรายละเอียดแยก platform) ── */}
-                  {slots.length > 0 && (() => {
-                    // แสดง actual ที่มีหลาย platform ให้เห็นแต่ละ platform
-                    const usersWithPlan = new Set(slots.map((s) => s.userId));
-                    const multiPlatformEntries = actualEntries.filter(
-                      (eg) => usersWithPlan.has(eg.userId) && actualByUser[eg.userId]?.length > 1
-                    );
-                    if (multiPlatformEntries.length === 0) return null;
-                    // dedupe by userId — show once per user's multiple platform rows
-                    const shownUsers = new Set<string>();
-                    return multiPlatformEntries
-                      .filter((eg) => { if (shownUsers.has(`${eg.userId}__${eg.platform}`)) return false; shownUsers.add(`${eg.userId}__${eg.platform}`); return true; })
-                      .map((eg, idx) => (
-                        <div key={`multi-${idx}`} className="px-4 py-2 border-l-4 border-green-200 ml-4">
-                          <div className="text-xs text-gray-500 flex items-center gap-2">
-                            <span>{PLATFORM_EMOJI[eg.platform]} {PLATFORM_LABELS[eg.platform]}</span>
-                            {eg.brandName && <span className="text-gray-400">{eg.brandName}</span>}
-                            <span className="ml-auto font-semibold text-green-600">{fmt(eg.salesAmount)}</span>
-                          </div>
-                        </div>
-                      ));
-                  })()}
-
                 </div>
               )}
             </div>
@@ -374,7 +424,6 @@ export default async function SchedulePage({
   );
 }
 
-// Avatar component
 function Avatar({ user }: { user: { name: string; profileImage?: string | null } }) {
   return (
     <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-[#F5D400] flex-shrink-0">
