@@ -42,6 +42,7 @@ type EntryGroup = {
 type UserDaySummary = {
   platforms: Set<string>;
   brandIds: Set<string | null>;
+  timePairs: Array<{ start: string; end: string }>; // actual recorded times
   totalSales: number;
   totalCount: number;
 };
@@ -78,7 +79,7 @@ export default async function SchedulePage({
       include: {
         user: { select: { id: true, name: true, profileImage: true } },
         brand: { select: { id: true, name: true, color: true } },
-        session: { select: { name: true } },
+        session: { select: { name: true, startTime: true, endTime: true } },
       },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
     }),
@@ -126,10 +127,17 @@ export default async function SchedulePage({
   for (const e of entries) {
     const key = `${e.date}__${e.userId}`;
     if (!userDaySummary[key]) {
-      userDaySummary[key] = { platforms: new Set(), brandIds: new Set(), totalSales: 0, totalCount: 0 };
+      userDaySummary[key] = { platforms: new Set(), brandIds: new Set(), timePairs: [], totalSales: 0, totalCount: 0 };
     }
     userDaySummary[key].platforms.add(e.platform);
     userDaySummary[key].brandIds.add(e.brandId);
+    // เก็บเวลาจริงที่บันทึก (session หรือ customStart/End)
+    const eStart = e.customStart ?? (e.session as { startTime?: string } | null)?.startTime ?? null;
+    const eEnd   = e.customEnd   ?? (e.session as { endTime?: string }   | null)?.endTime   ?? null;
+    if (eStart && eEnd) {
+      const alreadyAdded = userDaySummary[key].timePairs.some(t => t.start === eStart && t.end === eEnd);
+      if (!alreadyAdded) userDaySummary[key].timePairs.push({ start: eStart, end: eEnd });
+    }
     userDaySummary[key].totalSales += e.salesAmount;
     userDaySummary[key].totalCount += 1;
   }
@@ -247,6 +255,9 @@ export default async function SchedulePage({
             if (!summary) { if (isPast || date === today) dayMismatches++; continue; }
             if (s.platform && !summary.platforms.has(s.platform)) dayMismatches++;
             if (s.brandId && !summary.brandIds.has(s.brandId)) dayMismatches++;
+            if (summary.timePairs.length > 0 &&
+                !summary.timePairs.some(t => t.start === s.startTime && t.end === s.endTime))
+              dayMismatches++;
           }
 
           return (
@@ -283,7 +294,13 @@ export default async function SchedulePage({
                     // Mismatch detection
                     const platformMismatch = s.platform && hasActual && !summary.platforms.has(s.platform);
                     const brandMismatch = s.brandId && hasActual && !summary.brandIds.has(s.brandId);
-                    const hasMismatch = platformMismatch || brandMismatch;
+                    // เวลาไม่ตรง: มีเวลาบันทึกจริง แต่ไม่มีอันไหนตรงกับแผน
+                    const timeMismatch = hasActual &&
+                      summary.timePairs.length > 0 &&
+                      !summary.timePairs.some(
+                        (t) => t.start === s.startTime && t.end === s.endTime
+                      );
+                    const hasMismatch = platformMismatch || brandMismatch || timeMismatch;
 
                     // What actually happened
                     const actualPlatforms = summary ? [...summary.platforms] : [];
@@ -304,7 +321,9 @@ export default async function SchedulePage({
                               {/* แผน */}
                               <div className="text-xs text-gray-500 flex items-center gap-1.5 flex-wrap mt-0.5">
                                 <span className="text-[#F5A882] font-semibold">📋 แผน:</span>
-                                <span>⏰ {s.startTime}–{s.endTime}</span>
+                                <span className={timeMismatch ? "line-through text-gray-300" : ""}>
+                                  ⏰ {s.startTime}–{s.endTime}
+                                </span>
                                 {s.platform && (
                                   <span className={platformMismatch ? "line-through text-gray-300" : ""}>
                                     {PLATFORM_EMOJI[s.platform]} {PLATFORM_LABELS[s.platform]}
@@ -325,6 +344,11 @@ export default async function SchedulePage({
                                   <span className={`font-semibold ${hasMismatch ? "text-orange-500" : "text-green-600"}`}>
                                     {hasMismatch ? "⚠️ จริง:" : "✅ จริง:"}
                                   </span>
+                                  {summary!.timePairs.map((t, ti) => (
+                                    <span key={ti} className={`flex items-center gap-0.5 ${timeMismatch ? "text-orange-600 font-semibold" : "text-gray-600"}`}>
+                                      ⏰ {t.start}–{t.end}
+                                    </span>
+                                  ))}
                                   {actualPlatforms.map((p) => (
                                     <span key={p} className={`flex items-center gap-0.5 ${platformMismatch && s.platform !== p ? "text-orange-600 font-semibold" : "text-gray-600"}`}>
                                       {PLATFORM_EMOJI[p]} {PLATFORM_LABELS[p]}
@@ -345,12 +369,15 @@ export default async function SchedulePage({
 
                               {/* Mismatch explanation */}
                               {hasMismatch && (
-                                <div className="mt-1.5 text-[10px] text-orange-600 bg-orange-100 rounded-lg px-2 py-1 flex flex-wrap gap-x-2">
+                                <div className="mt-1.5 text-[10px] text-orange-600 bg-orange-100 rounded-lg px-2 py-1 space-y-0.5">
+                                  {timeMismatch && (
+                                    <div>⏰ เวลาไม่ตรง: วางแผน {s.startTime}–{s.endTime} แต่บันทึกจริง {summary!.timePairs.map(t => `${t.start}–${t.end}`).join(", ")}</div>
+                                  )}
                                   {platformMismatch && (
-                                    <span>Platform ไม่ตรง: วางแผน {PLATFORM_LABELS[s.platform!]} แต่ไลฟ์จริง {actualPlatforms.map(p => PLATFORM_LABELS[p]).join(", ")}</span>
+                                    <div>📱 Platform ไม่ตรง: วางแผน {PLATFORM_LABELS[s.platform!]} แต่ไลฟ์จริง {actualPlatforms.map(p => PLATFORM_LABELS[p]).join(", ")}</div>
                                   )}
                                   {brandMismatch && (
-                                    <span>แบรนด์ไม่ตรง: วางแผน {s.brand?.name} แต่ขายจริง {actualBrandNames.map(b => b.name).join(", ") || "ไม่ระบุแบรนด์"}</span>
+                                    <div>🏷️ แบรนด์ไม่ตรง: วางแผน {s.brand?.name} แต่ขายจริง {actualBrandNames.map(b => b.name).join(", ") || "ไม่ระบุแบรนด์"}</div>
                                   )}
                                 </div>
                               )}
