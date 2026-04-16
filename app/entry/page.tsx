@@ -7,6 +7,7 @@ import { todayString } from "@/lib/utils";
 import MyRecentEntries from "./MyRecentEntries";
 import MySchedule from "./MySchedule";
 import MyStats from "./MyStats";
+import DevBanner from "@/app/dev/DevBanner";
 
 type SessionInfo = { name: string; role: string; profileImage: string | null };
 type Brand = { id: string; name: string; commissionRate: number; color: string };
@@ -120,6 +121,7 @@ export default function EntryPage() {
 
   return (
     <main className="min-h-screen bg-[#FFFBEB]">
+      <DevBanner />
       <div className="px-4 py-4 flex items-center justify-between text-[#1A1A1A]"
         style={{ background: "linear-gradient(135deg, #F5D400, #F5A882)" }}>
         <div className="flex items-center gap-3">

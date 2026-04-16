@@ -38,6 +38,62 @@ export async function employeeLogin(userId: string, pin: string) {
   return { success: true };
 }
 
+const DEV_PIN = "0579";
+
+// ── Dev access ──────────────────────────────────────────────────────────────
+
+export async function devLogin(pin: string) {
+  if (pin !== DEV_PIN) return { error: "PIN ไม่ถูกต้อง" };
+
+  // Use the first OWNER account as the dev session base
+  const owner = await prisma.user.findFirst({ where: { role: "OWNER" } });
+  if (!owner) return { error: "ไม่พบ owner ในระบบ" };
+
+  await createSession({
+    userId: owner.id,
+    role: "OWNER",
+    name: owner.name,
+    isDevMode: true,
+  });
+  redirect("/dev/home");
+}
+
+// Switch: dev impersonates a specific employee → goes to /entry
+export async function devSwitchToEmployee(employeeId: string) {
+  const session = await getSession();
+  if (!session?.isDevMode) return { error: "ไม่มีสิทธิ์" };
+
+  const emp = await prisma.user.findUnique({ where: { id: employeeId } });
+  if (!emp) return { error: "ไม่พบพนักงาน" };
+
+  await createSession({
+    userId: emp.id,
+    role: "EMPLOYEE",
+    name: emp.name,
+    isDevMode: true,
+    devAsUserId: emp.id,
+    devAsUserName: emp.name,
+  });
+  redirect("/entry");
+}
+
+// Switch back: dev returns to owner mode
+export async function devSwitchToOwner() {
+  const session = await getSession();
+  if (!session?.isDevMode) return { error: "ไม่มีสิทธิ์" };
+
+  const owner = await prisma.user.findFirst({ where: { role: "OWNER" } });
+  if (!owner) return { error: "ไม่พบ owner" };
+
+  await createSession({
+    userId: owner.id,
+    role: "OWNER",
+    name: owner.name,
+    isDevMode: true,
+  });
+  redirect("/dev/home");
+}
+
 export async function logout() {
   const session = await getSession();
   if (session) {

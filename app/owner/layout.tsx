@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import TodayBadge from "./TodayBadge";
+import DevBanner from "@/app/dev/DevBanner";
 
 const NAV = [
   { href: "/owner/dashboard",  label: "ภาพรวม",  emoji: "📊" },
@@ -40,6 +41,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#FFFBEB" }}>
+      <DevBanner />
       {/* Top bar */}
       <header className="bg-white border-b-2 border-[#F5D400] px-5 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-3">

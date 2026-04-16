@@ -8,5 +8,11 @@ export async function GET() {
     where: { id: session.userId },
     select: { profileImage: true },
   });
-  return NextResponse.json({ name: session.name, role: session.role, profileImage: user?.profileImage ?? null });
+  return NextResponse.json({
+    name: session.name,
+    role: session.role,
+    profileImage: user?.profileImage ?? null,
+    isDevMode: session.isDevMode ?? false,
+    devAsUserName: session.devAsUserName ?? null,
+  });
 }

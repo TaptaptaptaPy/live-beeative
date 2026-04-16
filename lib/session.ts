@@ -9,6 +9,9 @@ export type SessionPayload = {
   userId: string;
   role: "OWNER" | "EMPLOYEE";
   name: string;
+  isDevMode?: boolean;
+  devAsUserId?: string;    // when impersonating an employee
+  devAsUserName?: string;
 };
 
 export async function encrypt(payload: SessionPayload) {
