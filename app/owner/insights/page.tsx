@@ -15,6 +15,21 @@ function getSlotName(start: string | null, end: string | null): string {
   return "❓ ไม่ระบุ";
 }
 
+// แปลง "00:00" / "24:00" เป็น เที่ยงคืน ให้อ่านง่ายขึ้น
+function fmtTime(t: string): string {
+  if (t === "00:00" || t === "24:00") return "00:00";
+  return t;
+}
+
+// คำนวณชั่วโมงที่ครอบคลุม (สำหรับ normalize avg per hour)
+function slotHours(start: string, end: string): number {
+  const [sh, sm] = start.split(":").map(Number);
+  let [eh, em] = end.split(":").map(Number);
+  if (eh === 0) eh = 24; // 00:00 = เที่ยงคืน = 24
+  const hrs = eh + em / 60 - (sh + sm / 60);
+  return hrs > 0 ? hrs : 1;
+}
+
 const SLOT_ORDER = ["☀️ เช้า", "🌙 เย็น", "⚙️ กำหนดเอง", "❓ ไม่ระบุ"];
 
 type SlotStat = { count: number; total: number; avg: number };
@@ -25,6 +40,16 @@ type EmpStat = {
   count: number;
   slots: Record<string, number>;
   platforms: Record<string, number>;
+};
+type CustomRange = {
+  key: string; // "HH:MM–HH:MM"
+  start: string;
+  end: string;
+  count: number;
+  total: number;
+  avg: number;
+  avgPerHour: number;
+  hours: number;
 };
 
 export default async function InsightsPage({
@@ -72,6 +97,8 @@ export default async function InsightsPage({
   const platMap: Record<string, { name: string; count: number; total: number }> = {};
   const empMap: Record<string, EmpStat> = {};
   const dailyMap: Record<string, number> = {};
+  // Custom range breakdown
+  const customRangeMap: Record<string, { start: string; end: string; count: number; total: number }> = {};
 
   for (const e of entries) {
     const slot = getSlotName(e.customStart, e.customEnd);
@@ -82,6 +109,15 @@ export default async function InsightsPage({
     if (!slotMap[slot]) slotMap[slot] = { count: 0, total: 0 };
     slotMap[slot].count++;
     slotMap[slot].total += e.salesAmount;
+
+    // custom range breakdown
+    if (slot === "⚙️ กำหนดเอง" && e.customStart && e.customEnd) {
+      const rangeKey = `${fmtTime(e.customStart)}–${fmtTime(e.customEnd)}`;
+      if (!customRangeMap[rangeKey])
+        customRangeMap[rangeKey] = { start: e.customStart, end: e.customEnd, count: 0, total: 0 };
+      customRangeMap[rangeKey].count++;
+      customRangeMap[rangeKey].total += e.salesAmount;
+    }
 
     // platform
     if (!platMap[platKey]) platMap[platKey] = { name: platLabel, count: 0, total: 0 };
@@ -105,6 +141,64 @@ export default async function InsightsPage({
     (s) => ({ slot: s, ...slotMap[s], avg: Math.round(slotMap[s].total / slotMap[s].count) })
   );
 
+  // Custom ranges — sorted by avg per hour desc
+  const customRanges: CustomRange[] = Object.entries(customRangeMap)
+    .map(([key, v]) => {
+      const hrs = slotHours(v.start, v.end);
+      return {
+        key,
+        start: v.start,
+        end: v.end,
+        count: v.count,
+        total: v.total,
+        avg: Math.round(v.total / v.count),
+        avgPerHour: Math.round(v.total / v.count / hrs),
+        hours: hrs,
+      };
+    })
+    .sort((a, b) => b.avgPerHour - a.avgPerHour);
+
+  // Unified comparison list: fixed slots + each custom range flattened
+  // For comparison: use avg/hr for all (fixed slots assumed hours: เช้า=7h, เย็น=8h)
+  const FIXED_HOURS: Record<string, number> = { "☀️ เช้า": 7, "🌙 เย็น": 8 };
+  type CompItem = {
+    label: string;
+    sublabel?: string;
+    count: number;
+    total: number;
+    avg: number;
+    avgPerHour: number;
+    isFixed: boolean;
+    isBest?: boolean;
+  };
+
+  const compItems: CompItem[] = [
+    ...slotList
+      .filter((s) => s.slot !== "⚙️ กำหนดเอง" && s.slot !== "❓ ไม่ระบุ")
+      .map((s) => ({
+        label: s.slot,
+        count: s.count,
+        total: s.total,
+        avg: s.avg,
+        avgPerHour: Math.round(s.total / s.count / (FIXED_HOURS[s.slot] ?? 7)),
+        isFixed: true,
+      })),
+    ...customRanges.map((r) => ({
+      label: `⚙️ ${r.key}`,
+      sublabel: `${r.hours.toFixed(1)} ชม.`,
+      count: r.count,
+      total: r.total,
+      avg: r.avg,
+      avgPerHour: r.avgPerHour,
+      isFixed: false,
+    })),
+  ].sort((a, b) => b.avgPerHour - a.avgPerHour);
+
+  // Mark best
+  if (compItems.length > 0) compItems[0].isBest = true;
+
+  const maxComp = Math.max(...compItems.map((c) => c.total), 1);
+
   const platList: PlatStat[] = Object.values(platMap)
     .map((p) => ({ ...p, avg: Math.round(p.total / p.count) }))
     .sort((a, b) => b.total - a.total);
@@ -115,18 +209,13 @@ export default async function InsightsPage({
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, total]) => ({ date: date.slice(5), total }));
 
-  // Sort slots by avg for insights
-  const slotByAvg = [...slotList].sort((a, b) => b.avg - a.avg);
-  const bestSlot = slotByAvg[0];
-  const bestPlat = platList[0];
   const topEmp = empList[0];
+  const bestComp = compItems[0];
+  const bestPlat = platList[0];
 
-  const maxSlot = Math.max(...slotList.map((s) => s.total), 1);
+  const matrixSlots = SLOT_ORDER.filter((s) => slotMap[s]);
   const maxPlat = Math.max(...platList.map((p) => p.total), 1);
   const maxEmp = Math.max(...empList.map((e) => e.total), 1);
-
-  // Unique slot keys for matrix
-  const matrixSlots = SLOT_ORDER.filter((s) => slotMap[s]);
 
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto pb-28">
@@ -153,11 +242,11 @@ export default async function InsightsPage({
       >
         <h2 className="font-bold mb-3">💡 สรุปอย่างรวดเร็ว — {days} วันที่ผ่านมา</h2>
         <div className="grid grid-cols-3 gap-2">
-          {bestSlot && (
+          {bestComp && (
             <div className="bg-white/50 rounded-xl p-2.5 text-center">
-              <div className="text-[10px] text-[#1A1A1A]/60 mb-1">เวลาขายดีสุด (avg)</div>
-              <div className="font-bold text-sm leading-tight">{bestSlot.slot}</div>
-              <div className="text-[10px] mt-0.5">฿{bestSlot.avg.toLocaleString("th-TH")}/ครั้ง</div>
+              <div className="text-[10px] text-[#1A1A1A]/60 mb-1">เวลาขายดีสุด</div>
+              <div className="font-bold text-sm leading-tight">{bestComp.label}</div>
+              <div className="text-[10px] mt-0.5">฿{bestComp.avgPerHour.toLocaleString("th-TH")}/ชม.</div>
             </div>
           )}
           {bestPlat && (
@@ -177,39 +266,75 @@ export default async function InsightsPage({
         </div>
       </div>
 
-      {/* ⏰ Time slot analysis */}
+      {/* ⏰ Unified time slot comparison */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <h2 className="font-bold text-[#1A1A1A] mb-0.5">⏰ ช่วงเวลาที่ขายดีที่สุด</h2>
-        <p className="text-xs text-gray-400 mb-3">เรียงตามยอด avg ต่อครั้ง (บอกว่าไลฟ์ช่วงไหนได้เงินดีกว่า)</p>
-        <div className="space-y-3">
-          {slotByAvg.map((s, i) => (
-            <div key={s.slot}>
-              <div className="flex justify-between items-center mb-1">
-                <div className="flex items-center gap-1.5">
-                  {i === 0 && (
+        <h2 className="font-bold text-[#1A1A1A] mb-0.5">⏰ เปรียบเทียบช่วงเวลาทั้งหมด</h2>
+        <p className="text-xs text-gray-400 mb-4">
+          เรียงตาม <span className="font-semibold text-gray-600">ยอด avg ต่อชั่วโมง</span> — เทียบได้ยุติธรรมแม้เวลาไม่เท่ากัน
+        </p>
+
+        <div className="space-y-4">
+          {compItems.map((c, i) => (
+            <div key={c.label}>
+              <div className="flex justify-between items-start mb-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {c.isBest && (
                     <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-lg font-bold">
-                      Best
+                      🏅 Best
                     </span>
                   )}
-                  <span className="font-semibold text-[#1A1A1A] text-sm">{s.slot}</span>
-                  <span className="text-xs text-gray-400">{s.count} ครั้ง</span>
+                  {!c.isFixed && (
+                    <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-lg">
+                      กำหนดเอง
+                    </span>
+                  )}
+                  <span className="font-semibold text-[#1A1A1A] text-sm">{c.label}</span>
+                  {c.sublabel && (
+                    <span className="text-[10px] text-gray-400">({c.sublabel})</span>
+                  )}
+                  <span className="text-xs text-gray-400">{c.count} ครั้ง</span>
                 </div>
-                <div className="text-right">
-                  <div className="font-bold text-[#1A1A1A] text-sm">{formatCurrency(s.total)}</div>
-                  <div className="text-[10px] text-gray-400">avg {formatCurrency(s.avg)}/ครั้ง</div>
+                <div className="text-right shrink-0 ml-2">
+                  <div className="font-bold text-[#1A1A1A] text-sm">{formatCurrency(c.total)}</div>
+                  <div className="text-[10px] text-gray-500">
+                    avg {formatCurrency(c.avg)}/ครั้ง
+                  </div>
+                  <div className="text-[10px] text-indigo-500 font-semibold">
+                    ≈ {formatCurrency(c.avgPerHour)}/ชม.
+                  </div>
                 </div>
               </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-full"
+                  className="h-full rounded-full transition-all"
                   style={{
-                    width: `${(s.total / maxSlot) * 100}%`,
-                    background: "linear-gradient(90deg, #F5D400, #F5A882)",
+                    width: `${(c.total / maxComp) * 100}%`,
+                    background: c.isBest
+                      ? "linear-gradient(90deg, #F5D400, #F5A882)"
+                      : c.isFixed
+                      ? "linear-gradient(90deg, #6366f1, #a855f7)"
+                      : "linear-gradient(90deg, #22c55e, #16a34a)",
                   }}
                 />
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Legend */}
+        <div className="flex gap-4 mt-4 pt-3 border-t border-gray-100 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-2 rounded-full" style={{ background: "linear-gradient(90deg,#F5D400,#F5A882)" }} />
+            <span className="text-[10px] text-gray-400">ดีที่สุด</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-2 rounded-full" style={{ background: "linear-gradient(90deg,#6366f1,#a855f7)" }} />
+            <span className="text-[10px] text-gray-400">เช้า / เย็น (preset)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-2 rounded-full" style={{ background: "linear-gradient(90deg,#22c55e,#16a34a)" }} />
+            <span className="text-[10px] text-gray-400">กำหนดเอง</span>
+          </div>
         </div>
       </div>
 
