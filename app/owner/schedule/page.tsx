@@ -325,9 +325,13 @@ export default async function SchedulePage({
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className={`font-medium text-sm flex items-center gap-1.5 ${employeeMismatch ? "text-gray-400 line-through" : "text-[#1A1A1A]"}`}>
-                                {s.user.name}
-                                {employeeMismatch && <span className="no-underline text-orange-500 font-semibold" style={{ textDecoration: "none" }}>→ {uniqueSubstitutes.join(", ")}</span>}
+                              <div className="font-medium text-sm flex items-center gap-1.5 text-[#1A1A1A]">
+                                {employeeMismatch ? (
+                                  <>
+                                    <span className="text-gray-400 line-through">{s.user.name}</span>
+                                    <span className="text-orange-500 font-semibold">→ {uniqueSubstitutes.join(", ")} (ไลฟ์แทน)</span>
+                                  </>
+                                ) : s.user.name}
                               </div>
 
                               {/* แผน */}
@@ -383,7 +387,7 @@ export default async function SchedulePage({
                               {hasMismatch && (
                                 <div className="mt-1.5 text-[10px] text-orange-600 bg-orange-100 rounded-lg px-2 py-1 space-y-0.5">
                                   {employeeMismatch && (
-                                    <div>👤 พนักงานไม่ตรง: วางแผน {s.user.name} แต่บันทึกโดย {uniqueSubstitutes.join(", ")}</div>
+                                    <div>👤 เปลี่ยนคนไลฟ์: {s.user.name} → {uniqueSubstitutes.join(", ")} มาไลฟ์แทน</div>
                                   )}
                                   {timeMismatch && (
                                     <div>⏰ เวลาไม่ตรง: วางแผน {s.startTime}–{s.endTime} แต่บันทึกจริง {summary!.timePairs.map(t => `${t.start}–${t.end}`).join(", ")}</div>
