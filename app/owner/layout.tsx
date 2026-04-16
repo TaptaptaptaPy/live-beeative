@@ -17,6 +17,7 @@ const NAV = [
   { href: "/owner/payroll",    label: "เงินเดือน", emoji: "💵" },
   { href: "/owner/reports",    label: "รายงาน",  emoji: "📈" },
   { href: "/owner/insights",   label: "วิเคราะห์", emoji: "🔍" },
+  { href: "/owner/logs",       label: "Log",       emoji: "🗒️" },
 ];
 
 // Pages that benefit from auto-refresh (data changes frequently)

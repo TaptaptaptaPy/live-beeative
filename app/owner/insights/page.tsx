@@ -268,146 +268,74 @@ export default async function InsightsPage({
         </div>
       </div>
 
-      {/* ⏰ Unified time slot comparison */}
+      {/* ⏰ Time slot ranking */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <h2 className="font-bold text-[#1A1A1A] mb-0.5">⏰ เปรียบเทียบช่วงเวลาทั้งหมด</h2>
-        <p className="text-xs text-gray-400 mb-1">
-          เรียงตาม <span className="font-semibold text-gray-600">ยอด avg ต่อชั่วโมง</span> — เทียบได้ยุติธรรมแม้เวลาไม่เท่ากัน
-        </p>
+        <h2 className="font-bold text-[#1A1A1A] mb-1">⏰ ช่วงเวลาที่ขายดีที่สุด</h2>
+        <p className="text-xs text-gray-400 mb-4">เรียงจากดีสุดไปแย่สุด วัดจากยอดเฉลี่ยต่อชั่วโมง</p>
 
-        {/* Timeline legend */}
-        <div className="mb-4 mt-3">
-          <div className="flex justify-between text-[9px] text-gray-300 mb-1 px-0.5">
-            {["06", "09", "12", "16", "20", "24"].map((h) => (
-              <span key={h} style={{ position: "relative", left: h === "09" ? "0%" : h === "16" ? "0%" : undefined }}>{h}</span>
-            ))}
-          </div>
-          {/* Base timeline bar */}
-          <div className="relative h-4 bg-gray-100 rounded-full overflow-hidden">
-            {/* เช้า zone */}
-            <div className="absolute h-full bg-yellow-200"
-              style={{ left: tlPct(9), width: tlWidth(9, 16) }} />
-            {/* เย็น zone */}
-            <div className="absolute h-full bg-orange-200"
-              style={{ left: tlPct(16), width: tlWidth(16, 24) }} />
-          </div>
-          <div className="flex gap-3 mt-1.5">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-2 rounded-sm bg-yellow-200" />
-              <span className="text-[10px] text-gray-400">☀️ เช้า 09–16</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-2 rounded-sm bg-orange-200" />
-              <span className="text-[10px] text-gray-400">🌙 เย็น 16–24</span>
-            </div>
-          </div>
-        </div>
+        <div className="space-y-3">
+          {compItems.map((c, i) => {
+            const rank = i + 1;
+            const rankEmoji = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}.`;
+            const pct = Math.round((c.avgPerHour / (compItems[0]?.avgPerHour || 1)) * 100);
 
-        <div className="space-y-5">
-          {compItems.map((c) => (
-            <div key={c.label}>
-              {/* Header row */}
-              <div className="flex justify-between items-start mb-1.5">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {c.isBest && (
-                    <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-lg font-bold">
-                      🏅 Best
-                    </span>
-                  )}
-                  {!c.isFixed && (
-                    <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-lg">
-                      กำหนดเอง
-                    </span>
-                  )}
-                  {c.overlap && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-lg font-medium ${
-                      c.overlap === "⚠️ คาบเกี่ยว"
-                        ? "bg-red-50 text-red-500"
-                        : c.overlap === "☀️ เช้า"
-                        ? "bg-yellow-50 text-yellow-600"
-                        : "bg-orange-50 text-orange-500"
-                    }`}>
-                      {c.overlap}
-                      {c.overlap === "⚠️ คาบเกี่ยว" && c.morningHrs !== undefined && c.eveningHrs !== undefined && (
-                        <span className="ml-0.5 text-gray-400">
-                          ({c.morningHrs.toFixed(1)}ชม.เช้า + {c.eveningHrs.toFixed(1)}ชม.เย็น)
-                        </span>
-                      )}
-                    </span>
-                  )}
-                  <span className="font-semibold text-[#1A1A1A] text-sm">{c.label}</span>
-                  {c.sublabel && <span className="text-[10px] text-gray-400">({c.sublabel})</span>}
-                  <span className="text-xs text-gray-400">{c.count} ครั้ง</span>
+            // คำอธิบาย overlap แบบสั้น
+            let overlapNote = "";
+            if (c.overlap === "⚠️ คาบเกี่ยว") overlapNote = "คาบเช้า+เย็น";
+            else if (c.overlap === "☀️ เช้า") overlapNote = "อยู่ในช่วงเช้า";
+            else if (c.overlap === "🌙 เย็น") overlapNote = "อยู่ในช่วงเย็น";
+
+            return (
+              <div key={c.label}
+                className={`rounded-xl p-3 border-2 transition-all ${
+                  c.isBest ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-100 bg-gray-50"
+                }`}>
+                <div className="flex items-center justify-between gap-3">
+                  {/* Left: rank + name */}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-xl flex-shrink-0">{rankEmoji}</span>
+                    <div className="min-w-0">
+                      <div className="font-bold text-[#1A1A1A] text-sm leading-tight">
+                        {c.label}
+                        {c.overlap === "⚠️ คาบเกี่ยว" && (
+                          <span className="ml-1.5 text-[10px] text-orange-400 font-normal">คาบเช้า+เย็น</span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-gray-400 mt-0.5">
+                        {c.count} ครั้ง
+                        {c.sublabel && ` · ${c.sublabel}`}
+                        {overlapNote && !c.isBest && c.overlap !== "⚠️ คาบเกี่ยว" && ` · ${overlapNote}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: key metric */}
+                  <div className="text-right flex-shrink-0">
+                    <div className={`text-lg font-bold ${c.isBest ? "text-[#1A1A1A]" : "text-gray-700"}`}>
+                      {formatCurrency(c.avgPerHour)}
+                    </div>
+                    <div className="text-[10px] text-gray-400">ต่อชั่วโมง</div>
+                  </div>
                 </div>
-                <div className="text-right shrink-0 ml-2">
-                  <div className="font-bold text-[#1A1A1A] text-sm">{formatCurrency(c.total)}</div>
-                  <div className="text-[10px] text-gray-500">avg {formatCurrency(c.avg)}/ครั้ง</div>
-                  <div className="text-[10px] text-indigo-500 font-semibold">≈ {formatCurrency(c.avgPerHour)}/ชม.</div>
-                </div>
-              </div>
 
-              {/* Mini timeline showing where this slot falls */}
-              {c.startH !== undefined && c.endH !== undefined && (
-                <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden mb-1.5">
-                  {/* เช้า bg */}
-                  <div className="absolute h-full bg-yellow-100"
-                    style={{ left: tlPct(9), width: tlWidth(9, 16) }} />
-                  {/* เย็น bg */}
-                  <div className="absolute h-full bg-orange-100"
-                    style={{ left: tlPct(16), width: tlWidth(16, 24) }} />
-                  {/* This slot */}
-                  <div
-                    className="absolute h-full rounded-full opacity-80"
+                {/* Progress bar เทียบกับอันดับ 1 */}
+                <div className="mt-2.5 h-1.5 bg-white rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all"
                     style={{
-                      left: tlPct(c.startH),
-                      width: tlWidth(c.startH, c.endH),
+                      width: `${pct}%`,
                       background: c.isBest
                         ? "linear-gradient(90deg,#F5D400,#F5A882)"
-                        : c.isFixed
-                        ? "linear-gradient(90deg,#6366f1,#a855f7)"
-                        : c.overlap === "⚠️ คาบเกี่ยว"
-                        ? "linear-gradient(90deg,#f59e0b,#ef4444)"
-                        : "linear-gradient(90deg,#22c55e,#16a34a)",
-                    }}
-                  />
+                        : "linear-gradient(90deg,#d1d5db,#9ca3af)",
+                    }} />
                 </div>
-              )}
-
-              {/* Sales bar */}
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${(c.total / maxComp) * 100}%`,
-                    background: c.isBest
-                      ? "linear-gradient(90deg,#F5D400,#F5A882)"
-                      : c.isFixed
-                      ? "linear-gradient(90deg,#6366f1,#a855f7)"
-                      : "linear-gradient(90deg,#22c55e,#16a34a)",
-                  }} />
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Legend */}
-        <div className="flex gap-3 mt-4 pt-3 border-t border-gray-100 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-2 rounded-full" style={{ background: "linear-gradient(90deg,#F5D400,#F5A882)" }} />
-            <span className="text-[10px] text-gray-400">ดีที่สุด</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-2 rounded-full" style={{ background: "linear-gradient(90deg,#6366f1,#a855f7)" }} />
-            <span className="text-[10px] text-gray-400">เช้า / เย็น</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-2 rounded-full" style={{ background: "linear-gradient(90deg,#22c55e,#16a34a)" }} />
-            <span className="text-[10px] text-gray-400">กำหนดเอง</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-2 rounded-full" style={{ background: "linear-gradient(90deg,#f59e0b,#ef4444)" }} />
-            <span className="text-[10px] text-gray-400">กำหนดเอง (คาบเกี่ยว)</span>
-          </div>
-        </div>
+        <p className="text-[10px] text-gray-300 mt-3 text-center">
+          ยอด/ชม. ใช้เปรียบเทียบข้ามช่วงเวลาที่ยาวไม่เท่ากัน
+        </p>
       </div>
 
       {/* 📱 Platform */}
