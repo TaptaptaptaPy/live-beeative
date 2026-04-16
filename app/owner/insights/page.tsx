@@ -8,6 +8,80 @@ const PLATFORM_EMOJI: Record<string, string> = {
   TIKTOK: "🎵", SHOPEE: "🛒", FACEBOOK: "📘", OTHER: "📱",
 };
 
+// ── Time helpers ───────────────────────────────────────────
+function toHours(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return (h === 0 && m === 0) ? 24 : h + m / 60; // 00:00 = เที่ยงคืน = 24
+}
+
+function fmtTime(t: string): string {
+  if (t === "00:00" || t === "24:00") return "00:00";
+  return t;
+}
+
+function slotHours(start: string, end: string): number {
+  const s = toHours(start);
+  const e = toHours(end);
+  return e > s ? e - s : 1;
+}
+
+// คำนวณ overlap กับ เช้า (09–16) และ เย็น (16–24) เป็นชั่วโมง
+function calcOverlap(start: string, end: string): { morning: number; evening: number } {
+  const s = toHours(start);
+  const e = toHours(end);
+  const morning = Math.max(0, Math.min(e, 16) - Math.max(s, 9));
+  const evening = Math.max(0, Math.min(e, 24) - Math.max(s, 16));
+  return { morning, evening };
+}
+
+type OverlapType = "☀️ เช้า" | "🌙 เย็น" | "⚠️ คาบเกี่ยว" | "นอกกรอบ";
+
+function getOverlapType(start: string, end: string): OverlapType {
+  const { morning, evening } = calcOverlap(start, end);
+  if (morning > 0 && evening > 0) return "⚠️ คาบเกี่ยว";
+  if (morning > 0) return "☀️ เช้า";
+  if (evening > 0) return "🌙 เย็น";
+  return "นอกกรอบ";
+}
+
+// Timeline: แสดง 06:00–24:00 = 18 ชม.
+const TL_START = 6;
+const TL_END = 24;
+const TL_HOURS = TL_END - TL_START;
+function tlPct(hour: number): string {
+  const clamped = Math.max(TL_START, Math.min(TL_END, hour));
+  return `${((clamped - TL_START) / TL_HOURS) * 100}%`;
+}
+function tlWidth(from: number, to: number): string {
+  const clamped = Math.max(0, Math.min(to, TL_END) - Math.max(from, TL_START));
+  return `${(clamped / TL_HOURS) * 100}%`;
+}
+
+// ── Types ──────────────────────────────────────────────────
+type PlatStat = { name: string; count: number; total: number; avg: number };
+type EmpStat = {
+  name: string; total: number; count: number;
+  slots: Record<string, number>; platforms: Record<string, number>;
+};
+type CustomRange = {
+  key: string; start: string; end: string;
+  count: number; total: number; avg: number;
+  hours: number; avgPerHour: number;
+  overlap: OverlapType;
+  morningHrs: number; eveningHrs: number;
+};
+type CompItem = {
+  label: string; sublabel?: string; count: number; total: number;
+  avg: number; avgPerHour: number; isFixed: boolean; isBest?: boolean;
+  startH?: number; endH?: number; overlap?: OverlapType;
+  morningHrs?: number; eveningHrs?: number;
+};
+
+const SLOT_ORDER = ["☀️ เช้า", "🌙 เย็น", "⚙️ กำหนดเอง", "❓ ไม่ระบุ"];
+const FIXED_HOURS: Record<string, number> = { "☀️ เช้า": 7, "🌙 เย็น": 8 };
+const FIXED_START: Record<string, number> = { "☀️ เช้า": 9, "🌙 เย็น": 16 };
+const FIXED_END: Record<string, number> = { "☀️ เช้า": 16, "🌙 เย็น": 24 };
+
 function getSlotName(start: string | null, end: string | null): string {
   if (start === "09:00" && end === "16:00") return "☀️ เช้า";
   if (start === "16:00" && (end === "00:00" || end === "24:00")) return "🌙 เย็น";
@@ -15,43 +89,7 @@ function getSlotName(start: string | null, end: string | null): string {
   return "❓ ไม่ระบุ";
 }
 
-// แปลง "00:00" / "24:00" เป็น เที่ยงคืน ให้อ่านง่ายขึ้น
-function fmtTime(t: string): string {
-  if (t === "00:00" || t === "24:00") return "00:00";
-  return t;
-}
-
-// คำนวณชั่วโมงที่ครอบคลุม (สำหรับ normalize avg per hour)
-function slotHours(start: string, end: string): number {
-  const [sh, sm] = start.split(":").map(Number);
-  let [eh, em] = end.split(":").map(Number);
-  if (eh === 0) eh = 24; // 00:00 = เที่ยงคืน = 24
-  const hrs = eh + em / 60 - (sh + sm / 60);
-  return hrs > 0 ? hrs : 1;
-}
-
-const SLOT_ORDER = ["☀️ เช้า", "🌙 เย็น", "⚙️ กำหนดเอง", "❓ ไม่ระบุ"];
-
-type SlotStat = { count: number; total: number; avg: number };
-type PlatStat = { name: string; count: number; total: number; avg: number };
-type EmpStat = {
-  name: string;
-  total: number;
-  count: number;
-  slots: Record<string, number>;
-  platforms: Record<string, number>;
-};
-type CustomRange = {
-  key: string; // "HH:MM–HH:MM"
-  start: string;
-  end: string;
-  count: number;
-  total: number;
-  avg: number;
-  avgPerHour: number;
-  hours: number;
-};
-
+// ── Page ───────────────────────────────────────────────────
 export default async function InsightsPage({
   searchParams,
 }: {
@@ -59,7 +97,6 @@ export default async function InsightsPage({
 }) {
   const params = await searchParams;
   const days = Math.min(Math.max(parseInt(params.days || "30"), 7), 365);
-
   const today = new Date().toISOString().slice(0, 10);
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days + 1);
@@ -82,9 +119,7 @@ export default async function InsightsPage({
             <a key={d} href={`?days=${d}`}
               className={`text-sm px-4 py-2 rounded-xl font-medium border-2 transition-all ${
                 days === d ? "border-[#F5D400] bg-[#FFF8CC] text-[#1A1A1A]" : "border-gray-200 text-gray-500 bg-white"
-              }`}>
-              {d} วัน
-            </a>
+              }`}>{d} วัน</a>
           ))}
         </div>
         <p className="text-gray-400 text-center py-20">ยังไม่มีข้อมูลในช่วงนี้</p>
@@ -97,114 +132,75 @@ export default async function InsightsPage({
   const platMap: Record<string, { name: string; count: number; total: number }> = {};
   const empMap: Record<string, EmpStat> = {};
   const dailyMap: Record<string, number> = {};
-  // Custom range breakdown
   const customRangeMap: Record<string, { start: string; end: string; count: number; total: number }> = {};
 
   for (const e of entries) {
     const slot = getSlotName(e.customStart, e.customEnd);
-    const platKey = e.platform;
     const platLabel = `${PLATFORM_EMOJI[e.platform] || "📱"} ${PLATFORM_LABELS[e.platform] || e.platform}`;
 
-    // slot
     if (!slotMap[slot]) slotMap[slot] = { count: 0, total: 0 };
-    slotMap[slot].count++;
-    slotMap[slot].total += e.salesAmount;
+    slotMap[slot].count++; slotMap[slot].total += e.salesAmount;
 
-    // custom range breakdown
     if (slot === "⚙️ กำหนดเอง" && e.customStart && e.customEnd) {
-      const rangeKey = `${fmtTime(e.customStart)}–${fmtTime(e.customEnd)}`;
-      if (!customRangeMap[rangeKey])
-        customRangeMap[rangeKey] = { start: e.customStart, end: e.customEnd, count: 0, total: 0 };
-      customRangeMap[rangeKey].count++;
-      customRangeMap[rangeKey].total += e.salesAmount;
+      const rk = `${fmtTime(e.customStart)}–${fmtTime(e.customEnd)}`;
+      if (!customRangeMap[rk]) customRangeMap[rk] = { start: e.customStart, end: e.customEnd, count: 0, total: 0 };
+      customRangeMap[rk].count++; customRangeMap[rk].total += e.salesAmount;
     }
 
-    // platform
-    if (!platMap[platKey]) platMap[platKey] = { name: platLabel, count: 0, total: 0 };
-    platMap[platKey].count++;
-    platMap[platKey].total += e.salesAmount;
+    if (!platMap[e.platform]) platMap[e.platform] = { name: platLabel, count: 0, total: 0 };
+    platMap[e.platform].count++; platMap[e.platform].total += e.salesAmount;
 
-    // employee
-    if (!empMap[e.userId])
-      empMap[e.userId] = { name: e.user.name, total: 0, count: 0, slots: {}, platforms: {} };
-    empMap[e.userId].total += e.salesAmount;
-    empMap[e.userId].count++;
+    if (!empMap[e.userId]) empMap[e.userId] = { name: e.user.name, total: 0, count: 0, slots: {}, platforms: {} };
+    empMap[e.userId].total += e.salesAmount; empMap[e.userId].count++;
     empMap[e.userId].slots[slot] = (empMap[e.userId].slots[slot] || 0) + e.salesAmount;
-    empMap[e.userId].platforms[platLabel] =
-      (empMap[e.userId].platforms[platLabel] || 0) + e.salesAmount;
+    empMap[e.userId].platforms[platLabel] = (empMap[e.userId].platforms[platLabel] || 0) + e.salesAmount;
 
-    // daily
     dailyMap[e.date] = (dailyMap[e.date] || 0) + e.salesAmount;
   }
 
-  const slotList: (SlotStat & { slot: string })[] = SLOT_ORDER.filter((s) => slotMap[s]).map(
-    (s) => ({ slot: s, ...slotMap[s], avg: Math.round(slotMap[s].total / slotMap[s].count) })
-  );
+  const customRanges: CustomRange[] = Object.entries(customRangeMap).map(([key, v]) => {
+    const hrs = slotHours(v.start, v.end);
+    const avg = Math.round(v.total / v.count);
+    const { morning, evening } = calcOverlap(v.start, v.end);
+    return {
+      key, start: v.start, end: v.end,
+      count: v.count, total: v.total, avg,
+      hours: hrs, avgPerHour: Math.round(avg / hrs),
+      overlap: getOverlapType(v.start, v.end),
+      morningHrs: morning, eveningHrs: evening,
+    };
+  }).sort((a, b) => b.avgPerHour - a.avgPerHour);
 
-  // Custom ranges — sorted by avg per hour desc
-  const customRanges: CustomRange[] = Object.entries(customRangeMap)
-    .map(([key, v]) => {
-      const hrs = slotHours(v.start, v.end);
-      return {
-        key,
-        start: v.start,
-        end: v.end,
-        count: v.count,
-        total: v.total,
-        avg: Math.round(v.total / v.count),
-        avgPerHour: Math.round(v.total / v.count / hrs),
-        hours: hrs,
-      };
-    })
-    .sort((a, b) => b.avgPerHour - a.avgPerHour);
-
-  // Unified comparison list: fixed slots + each custom range flattened
-  // For comparison: use avg/hr for all (fixed slots assumed hours: เช้า=7h, เย็น=8h)
-  const FIXED_HOURS: Record<string, number> = { "☀️ เช้า": 7, "🌙 เย็น": 8 };
-  type CompItem = {
-    label: string;
-    sublabel?: string;
-    count: number;
-    total: number;
-    avg: number;
-    avgPerHour: number;
-    isFixed: boolean;
-    isBest?: boolean;
-  };
-
+  // Unified comparison
   const compItems: CompItem[] = [
-    ...slotList
-      .filter((s) => s.slot !== "⚙️ กำหนดเอง" && s.slot !== "❓ ไม่ระบุ")
-      .map((s) => ({
-        label: s.slot,
-        count: s.count,
-        total: s.total,
-        avg: s.avg,
-        avgPerHour: Math.round(s.total / s.count / (FIXED_HOURS[s.slot] ?? 7)),
-        isFixed: true,
-      })),
+    ...SLOT_ORDER
+      .filter((s) => slotMap[s] && s !== "⚙️ กำหนดเอง" && s !== "❓ ไม่ระบุ")
+      .map((s) => {
+        const v = slotMap[s];
+        const avg = Math.round(v.total / v.count);
+        return {
+          label: s, count: v.count, total: v.total, avg,
+          avgPerHour: Math.round(avg / (FIXED_HOURS[s] ?? 7)),
+          isFixed: true,
+          startH: FIXED_START[s], endH: FIXED_END[s],
+        };
+      }),
     ...customRanges.map((r) => ({
-      label: `⚙️ ${r.key}`,
-      sublabel: `${r.hours.toFixed(1)} ชม.`,
-      count: r.count,
-      total: r.total,
-      avg: r.avg,
-      avgPerHour: r.avgPerHour,
-      isFixed: false,
+      label: `⚙️ ${r.key}`, sublabel: `${r.hours % 1 === 0 ? r.hours : r.hours.toFixed(1)} ชม.`,
+      count: r.count, total: r.total, avg: r.avg,
+      avgPerHour: r.avgPerHour, isFixed: false,
+      startH: toHours(r.start), endH: toHours(r.end),
+      overlap: r.overlap, morningHrs: r.morningHrs, eveningHrs: r.eveningHrs,
     })),
   ].sort((a, b) => b.avgPerHour - a.avgPerHour);
 
-  // Mark best
   if (compItems.length > 0) compItems[0].isBest = true;
 
   const maxComp = Math.max(...compItems.map((c) => c.total), 1);
-
   const platList: PlatStat[] = Object.values(platMap)
     .map((p) => ({ ...p, avg: Math.round(p.total / p.count) }))
     .sort((a, b) => b.total - a.total);
-
   const empList: EmpStat[] = Object.values(empMap).sort((a, b) => b.total - a.total);
-
   const dailyTrend = Object.entries(dailyMap)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, total]) => ({ date: date.slice(5), total }));
@@ -212,7 +208,6 @@ export default async function InsightsPage({
   const topEmp = empList[0];
   const bestComp = compItems[0];
   const bestPlat = platList[0];
-
   const matrixSlots = SLOT_ORDER.filter((s) => slotMap[s]);
   const maxPlat = Math.max(...platList.map((p) => p.total), 1);
   const maxEmp = Math.max(...empList.map((e) => e.total), 1);
@@ -226,20 +221,14 @@ export default async function InsightsPage({
         {DAYS_OPTIONS.map((d) => (
           <a key={d} href={`?days=${d}`}
             className={`text-sm px-4 py-2 rounded-xl font-medium border-2 transition-all ${
-              days === d
-                ? "border-[#F5D400] bg-[#FFF8CC] text-[#1A1A1A]"
-                : "border-gray-200 text-gray-500 bg-white"
-            }`}>
-            {d} วัน
-          </a>
+              days === d ? "border-[#F5D400] bg-[#FFF8CC] text-[#1A1A1A]" : "border-gray-200 text-gray-500 bg-white"
+            }`}>{d} วัน</a>
         ))}
       </div>
 
-      {/* Quick summary card */}
-      <div
-        className="rounded-2xl p-4 text-[#1A1A1A]"
-        style={{ background: "linear-gradient(135deg, #F5D400, #F5A882)" }}
-      >
+      {/* Quick summary */}
+      <div className="rounded-2xl p-4 text-[#1A1A1A]"
+        style={{ background: "linear-gradient(135deg, #F5D400, #F5A882)" }}>
         <h2 className="font-bold mb-3">💡 สรุปอย่างรวดเร็ว — {days} วันที่ผ่านมา</h2>
         <div className="grid grid-cols-3 gap-2">
           {bestComp && (
@@ -269,13 +258,42 @@ export default async function InsightsPage({
       {/* ⏰ Unified time slot comparison */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <h2 className="font-bold text-[#1A1A1A] mb-0.5">⏰ เปรียบเทียบช่วงเวลาทั้งหมด</h2>
-        <p className="text-xs text-gray-400 mb-4">
+        <p className="text-xs text-gray-400 mb-1">
           เรียงตาม <span className="font-semibold text-gray-600">ยอด avg ต่อชั่วโมง</span> — เทียบได้ยุติธรรมแม้เวลาไม่เท่ากัน
         </p>
 
-        <div className="space-y-4">
-          {compItems.map((c, i) => (
+        {/* Timeline legend */}
+        <div className="mb-4 mt-3">
+          <div className="flex justify-between text-[9px] text-gray-300 mb-1 px-0.5">
+            {["06", "09", "12", "16", "20", "24"].map((h) => (
+              <span key={h} style={{ position: "relative", left: h === "09" ? "0%" : h === "16" ? "0%" : undefined }}>{h}</span>
+            ))}
+          </div>
+          {/* Base timeline bar */}
+          <div className="relative h-4 bg-gray-100 rounded-full overflow-hidden">
+            {/* เช้า zone */}
+            <div className="absolute h-full bg-yellow-200"
+              style={{ left: tlPct(9), width: tlWidth(9, 16) }} />
+            {/* เย็น zone */}
+            <div className="absolute h-full bg-orange-200"
+              style={{ left: tlPct(16), width: tlWidth(16, 24) }} />
+          </div>
+          <div className="flex gap-3 mt-1.5">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-2 rounded-sm bg-yellow-200" />
+              <span className="text-[10px] text-gray-400">☀️ เช้า 09–16</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-2 rounded-sm bg-orange-200" />
+              <span className="text-[10px] text-gray-400">🌙 เย็น 16–24</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-5">
+          {compItems.map((c) => (
             <div key={c.label}>
+              {/* Header row */}
               <div className="flex justify-between items-start mb-1.5">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {c.isBest && (
@@ -288,57 +306,98 @@ export default async function InsightsPage({
                       กำหนดเอง
                     </span>
                   )}
-                  <span className="font-semibold text-[#1A1A1A] text-sm">{c.label}</span>
-                  {c.sublabel && (
-                    <span className="text-[10px] text-gray-400">({c.sublabel})</span>
+                  {c.overlap && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-lg font-medium ${
+                      c.overlap === "⚠️ คาบเกี่ยว"
+                        ? "bg-red-50 text-red-500"
+                        : c.overlap === "☀️ เช้า"
+                        ? "bg-yellow-50 text-yellow-600"
+                        : "bg-orange-50 text-orange-500"
+                    }`}>
+                      {c.overlap}
+                      {c.overlap === "⚠️ คาบเกี่ยว" && c.morningHrs !== undefined && c.eveningHrs !== undefined && (
+                        <span className="ml-0.5 text-gray-400">
+                          ({c.morningHrs.toFixed(1)}ชม.เช้า + {c.eveningHrs.toFixed(1)}ชม.เย็น)
+                        </span>
+                      )}
+                    </span>
                   )}
+                  <span className="font-semibold text-[#1A1A1A] text-sm">{c.label}</span>
+                  {c.sublabel && <span className="text-[10px] text-gray-400">({c.sublabel})</span>}
                   <span className="text-xs text-gray-400">{c.count} ครั้ง</span>
                 </div>
                 <div className="text-right shrink-0 ml-2">
                   <div className="font-bold text-[#1A1A1A] text-sm">{formatCurrency(c.total)}</div>
-                  <div className="text-[10px] text-gray-500">
-                    avg {formatCurrency(c.avg)}/ครั้ง
-                  </div>
-                  <div className="text-[10px] text-indigo-500 font-semibold">
-                    ≈ {formatCurrency(c.avgPerHour)}/ชม.
-                  </div>
+                  <div className="text-[10px] text-gray-500">avg {formatCurrency(c.avg)}/ครั้ง</div>
+                  <div className="text-[10px] text-indigo-500 font-semibold">≈ {formatCurrency(c.avgPerHour)}/ชม.</div>
                 </div>
               </div>
-              <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all"
+
+              {/* Mini timeline showing where this slot falls */}
+              {c.startH !== undefined && c.endH !== undefined && (
+                <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden mb-1.5">
+                  {/* เช้า bg */}
+                  <div className="absolute h-full bg-yellow-100"
+                    style={{ left: tlPct(9), width: tlWidth(9, 16) }} />
+                  {/* เย็น bg */}
+                  <div className="absolute h-full bg-orange-100"
+                    style={{ left: tlPct(16), width: tlWidth(16, 24) }} />
+                  {/* This slot */}
+                  <div
+                    className="absolute h-full rounded-full opacity-80"
+                    style={{
+                      left: tlPct(c.startH),
+                      width: tlWidth(c.startH, c.endH),
+                      background: c.isBest
+                        ? "linear-gradient(90deg,#F5D400,#F5A882)"
+                        : c.isFixed
+                        ? "linear-gradient(90deg,#6366f1,#a855f7)"
+                        : c.overlap === "⚠️ คาบเกี่ยว"
+                        ? "linear-gradient(90deg,#f59e0b,#ef4444)"
+                        : "linear-gradient(90deg,#22c55e,#16a34a)",
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Sales bar */}
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all"
                   style={{
                     width: `${(c.total / maxComp) * 100}%`,
                     background: c.isBest
-                      ? "linear-gradient(90deg, #F5D400, #F5A882)"
+                      ? "linear-gradient(90deg,#F5D400,#F5A882)"
                       : c.isFixed
-                      ? "linear-gradient(90deg, #6366f1, #a855f7)"
-                      : "linear-gradient(90deg, #22c55e, #16a34a)",
-                  }}
-                />
+                      ? "linear-gradient(90deg,#6366f1,#a855f7)"
+                      : "linear-gradient(90deg,#22c55e,#16a34a)",
+                  }} />
               </div>
             </div>
           ))}
         </div>
 
         {/* Legend */}
-        <div className="flex gap-4 mt-4 pt-3 border-t border-gray-100 flex-wrap">
+        <div className="flex gap-3 mt-4 pt-3 border-t border-gray-100 flex-wrap">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-2 rounded-full" style={{ background: "linear-gradient(90deg,#F5D400,#F5A882)" }} />
             <span className="text-[10px] text-gray-400">ดีที่สุด</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-2 rounded-full" style={{ background: "linear-gradient(90deg,#6366f1,#a855f7)" }} />
-            <span className="text-[10px] text-gray-400">เช้า / เย็น (preset)</span>
+            <span className="text-[10px] text-gray-400">เช้า / เย็น</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-2 rounded-full" style={{ background: "linear-gradient(90deg,#22c55e,#16a34a)" }} />
             <span className="text-[10px] text-gray-400">กำหนดเอง</span>
           </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-2 rounded-full" style={{ background: "linear-gradient(90deg,#f59e0b,#ef4444)" }} />
+            <span className="text-[10px] text-gray-400">กำหนดเอง (คาบเกี่ยว)</span>
+          </div>
         </div>
       </div>
 
-      {/* 📱 Platform analysis */}
+      {/* 📱 Platform */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <h2 className="font-bold text-[#1A1A1A] mb-0.5">📱 Platform ที่ขายดีที่สุด</h2>
         <p className="text-xs text-gray-400 mb-3">เรียงตามยอดขายรวม</p>
@@ -347,11 +406,7 @@ export default async function InsightsPage({
             <div key={p.name}>
               <div className="flex justify-between items-center mb-1">
                 <div className="flex items-center gap-1.5">
-                  {i === 0 && (
-                    <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-lg font-bold">
-                      Best
-                    </span>
-                  )}
+                  {i === 0 && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-lg font-bold">Best</span>}
                   <span className="font-semibold text-[#1A1A1A] text-sm">{p.name}</span>
                   <span className="text-xs text-gray-400">{p.count} ครั้ง</span>
                 </div>
@@ -361,13 +416,7 @@ export default async function InsightsPage({
                 </div>
               </div>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${(p.total / maxPlat) * 100}%`,
-                    background: "linear-gradient(90deg, #6366f1, #a855f7)",
-                  }}
-                />
+                <div className="h-full rounded-full" style={{ width: `${(p.total / maxPlat) * 100}%`, background: "linear-gradient(90deg,#6366f1,#a855f7)" }} />
               </div>
             </div>
           ))}
@@ -382,7 +431,7 @@ export default async function InsightsPage({
             <div key={emp.name}>
               <div className="flex justify-between items-center mb-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">{["🥇", "🥈", "🥉"][i] || "👤"}</span>
+                  <span className="text-xl">{["🥇","🥈","🥉"][i] || "👤"}</span>
                   <div>
                     <div className="font-semibold text-[#1A1A1A] text-sm">{emp.name}</div>
                     <div className="text-[10px] text-gray-400">
@@ -393,20 +442,14 @@ export default async function InsightsPage({
                 <span className="font-bold text-[#1A1A1A]">{formatCurrency(emp.total)}</span>
               </div>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${(emp.total / maxEmp) * 100}%`,
-                    background: "linear-gradient(90deg, #F5D400, #F5A882)",
-                  }}
-                />
+                <div className="h-full rounded-full" style={{ width: `${(emp.total / maxEmp) * 100}%`, background: "linear-gradient(90deg,#F5D400,#F5A882)" }} />
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* 👤 × ⏰ Employee × Time slot matrix */}
+      {/* 👤 × ⏰ Matrix */}
       {matrixSlots.length > 0 && empList.length > 0 && (
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <h2 className="font-bold text-[#1A1A1A] mb-0.5">👤 × ⏰ พนักงาน vs ช่วงเวลา</h2>
@@ -417,9 +460,7 @@ export default async function InsightsPage({
                 <tr>
                   <th className="text-left pb-2 text-gray-400 font-medium pr-3 whitespace-nowrap">พนักงาน</th>
                   {matrixSlots.map((s) => (
-                    <th key={s} className="pb-2 text-gray-400 font-medium text-center min-w-[72px] whitespace-nowrap">
-                      {s}
-                    </th>
+                    <th key={s} className="pb-2 text-gray-400 font-medium text-center min-w-[72px] whitespace-nowrap">{s}</th>
                   ))}
                   <th className="pb-2 text-gray-400 font-medium text-right pl-2 whitespace-nowrap">รวม</th>
                 </tr>
@@ -432,17 +473,11 @@ export default async function InsightsPage({
                       const val = emp.slots[s] || 0;
                       return (
                         <td key={s} className="py-2 text-center">
-                          {val > 0 ? (
-                            <span className="font-semibold text-[#1A1A1A]">{formatCurrency(val)}</span>
-                          ) : (
-                            <span className="text-gray-200">—</span>
-                          )}
+                          {val > 0 ? <span className="font-semibold text-[#1A1A1A]">{formatCurrency(val)}</span> : <span className="text-gray-200">—</span>}
                         </td>
                       );
                     })}
-                    <td className="py-2 text-right pl-2 font-bold text-[#1A1A1A]">
-                      {formatCurrency(emp.total)}
-                    </td>
+                    <td className="py-2 text-right pl-2 font-bold text-[#1A1A1A]">{formatCurrency(emp.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -451,7 +486,7 @@ export default async function InsightsPage({
         </div>
       )}
 
-      {/* 👤 × 📱 Employee × Platform matrix */}
+      {/* 👤 × 📱 Matrix */}
       {platList.length > 0 && empList.length > 0 && (
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <h2 className="font-bold text-[#1A1A1A] mb-0.5">👤 × 📱 พนักงาน vs Platform</h2>
@@ -462,9 +497,7 @@ export default async function InsightsPage({
                 <tr>
                   <th className="text-left pb-2 text-gray-400 font-medium pr-3 whitespace-nowrap">พนักงาน</th>
                   {platList.map((p) => (
-                    <th key={p.name} className="pb-2 text-gray-400 font-medium text-center min-w-[72px] whitespace-nowrap">
-                      {p.name}
-                    </th>
+                    <th key={p.name} className="pb-2 text-gray-400 font-medium text-center min-w-[72px] whitespace-nowrap">{p.name}</th>
                   ))}
                 </tr>
               </thead>
@@ -476,11 +509,7 @@ export default async function InsightsPage({
                       const val = emp.platforms[p.name] || 0;
                       return (
                         <td key={p.name} className="py-2 text-center">
-                          {val > 0 ? (
-                            <span className="font-semibold text-[#1A1A1A]">{formatCurrency(val)}</span>
-                          ) : (
-                            <span className="text-gray-200">—</span>
-                          )}
+                          {val > 0 ? <span className="font-semibold text-[#1A1A1A]">{formatCurrency(val)}</span> : <span className="text-gray-200">—</span>}
                         </td>
                       );
                     })}
@@ -492,7 +521,7 @@ export default async function InsightsPage({
         </div>
       )}
 
-      {/* 📈 Daily trend chart */}
+      {/* 📈 Daily trend */}
       {dailyTrend.length > 1 && <InsightsTrendChart data={dailyTrend} />}
     </div>
   );
