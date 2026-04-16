@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { devSwitchToOwner } from "@/app/actions/auth";
 
 type MeResponse = {
@@ -10,6 +11,7 @@ type MeResponse = {
 };
 
 export default function DevBanner() {
+  const router = useRouter();
   const [devInfo, setDevInfo] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -26,7 +28,12 @@ export default function DevBanner() {
 
   async function backToOwner() {
     setLoading(true);
-    await devSwitchToOwner();
+    const result = await devSwitchToOwner();
+    if (result?.error) {
+      setLoading(false);
+    } else {
+      router.push("/dev/home");
+    }
   }
 
   const isStaffView = devInfo.role === "EMPLOYEE";

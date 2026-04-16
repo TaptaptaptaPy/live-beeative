@@ -55,7 +55,8 @@ export async function devLogin(pin: string) {
     name: owner.name,
     isDevMode: true,
   });
-  redirect("/dev/home");
+  // Return success — client handles navigation so cookie is flushed first
+  return { success: true };
 }
 
 // Switch: dev impersonates a specific employee → goes to /entry
@@ -74,7 +75,7 @@ export async function devSwitchToEmployee(employeeId: string) {
     devAsUserId: emp.id,
     devAsUserName: emp.name,
   });
-  redirect("/entry");
+  return { success: true };
 }
 
 // Switch back: dev returns to owner mode
@@ -91,7 +92,7 @@ export async function devSwitchToOwner() {
     name: owner.name,
     isDevMode: true,
   });
-  redirect("/dev/home");
+  return { success: true };
 }
 
 export async function logout() {

@@ -150,8 +150,9 @@ export default function EmployeeHome() {
             </div>
           )}
 
-          <div className="mt-8 text-center">
-            <a href="/owner/login" className="text-[#1A1A1A]/60 text-sm underline">🔐 เจ้าของร้าน เข้าสู่ระบบ</a>
+          <div className="mt-8 text-center space-y-2">
+            <a href="/owner/login" className="block text-[#1A1A1A]/60 text-sm underline">🔐 เจ้าของร้าน เข้าสู่ระบบ</a>
+            <a href="/dev" className="block text-[#1A1A1A]/30 text-xs">⚡ Dev</a>
           </div>
         </div>
       </main>

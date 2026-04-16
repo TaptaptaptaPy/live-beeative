@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { devLogin } from "@/app/actions/auth";
 
 export default function DevLoginPage() {
+  const router = useRouter();
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,8 +18,11 @@ export default function DevLoginPage() {
     if (result?.error) {
       setError(result.error);
       setPin("");
+      setLoading(false);
+    } else {
+      // Navigate after cookie is confirmed set
+      router.push("/dev/home");
     }
-    setLoading(false);
   }
 
   return (

@@ -2,17 +2,24 @@
 
 import { devSwitchToEmployee } from "@/app/actions/auth";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Employee = { id: string; name: string; profileImage: string | null };
 
 export default function DevSwitchButtons({ employees }: { employees: Employee[] }) {
+  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
   async function switchTo(emp: Employee) {
     setLoading(emp.id);
-    await devSwitchToEmployee(emp.id);
-    setLoading(null);
+    const result = await devSwitchToEmployee(emp.id);
+    if (result?.error) {
+      alert(result.error);
+      setLoading(null);
+    } else {
+      router.push("/entry");
+    }
   }
 
   return (
