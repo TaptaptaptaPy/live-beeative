@@ -24,13 +24,6 @@ const PLATFORMS = [
   { value: "OTHER",    label: "อื่นๆ",     emoji: "📱" },
 ];
 
-function getMinDate(role: string): string {
-  if (role === "OWNER") return "2020-01-01";
-  // employee: ย้อนหลังได้ 24 ชั่วโมง
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  return `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,"0")}-${String(yesterday.getDate()).padStart(2,"0")}`;
-}
 
 export default function EntryPage() {
   const [userSession, setUserSession] = useState<SessionInfo | null>(null);
@@ -56,7 +49,6 @@ export default function EntryPage() {
   const activePreset = TIME_PRESETS.find(p => p.id === selectedPreset);
 
   const today = todayString();
-  const minDate = userSession ? getMinDate(userSession.role) : today;
   const isBackdated = date !== today;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -164,13 +156,10 @@ export default function EntryPage() {
             📅 วันที่
             {isBackdated && <span className="ml-2 text-sm text-orange-500 font-normal">(ย้อนหลัง)</span>}
           </label>
-          <input type="date" value={date} min={minDate} max={today}
+          <input type="date" value={date} max={today}
             onChange={e => setDate(e.target.value)}
             className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-[#F5D400]"
           />
-          {userSession?.role === "EMPLOYEE" && (
-            <p className="text-xs text-gray-400 mt-1">⚠️ พนักงานลงย้อนหลังได้ไม่เกิน 24 ชั่วโมง</p>
-          )}
         </div>
 
         {/* Session */}

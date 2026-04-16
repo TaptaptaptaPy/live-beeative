@@ -5,14 +5,6 @@ import { getSession } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
 import { revalidatePath } from "next/cache";
 
-function isWithin24Hours(dateStr: string): boolean {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const entryDate = new Date(y, m - 1, d);
-  const now = new Date();
-  const diffMs = now.getTime() - entryDate.getTime();
-  return diffMs >= 0 && diffMs <= 24 * 60 * 60 * 1000;
-}
-
 export async function createEntry(formData: FormData) {
   const session = await getSession();
   if (!session) return { error: "กรุณาเข้าสู่ระบบ" };
@@ -33,12 +25,7 @@ export async function createEntry(formData: FormData) {
   const today = new Date().toISOString().slice(0, 10);
   const isBackdated = date !== today;
 
-  // พนักงานลงย้อนหลังได้แค่ 24 ชั่วโมง
-  if (session.role === "EMPLOYEE" && isBackdated) {
-    if (!isWithin24Hours(date)) {
-      return { error: "พนักงานลงยอดย้อนหลังได้ไม่เกิน 24 ชั่วโมง" };
-    }
-  }
+  // ไม่จำกัดการลงย้อนหลังสำหรับพนักงาน
 
   const liveSession = sessionId
     ? await prisma.liveSession.findUnique({ where: { id: sessionId } })
@@ -133,11 +120,9 @@ export async function updateEntry(formData: FormData) {
   const entry = await prisma.timeEntry.findUnique({ where: { id }, include: { user: true } });
   if (!entry) return { error: "ไม่พบรายการ" };
 
-  // พนักงาน: แก้ไขได้เฉพาะของตัวเอง และภายใน 24 ชั่วโมงหลังสร้าง
+  // พนักงาน: แก้ไขได้เฉพาะของตัวเอง
   if (session.role === "EMPLOYEE") {
     if (entry.userId !== session.userId) return { error: "ไม่มีสิทธิ์แก้ไขรายการของคนอื่น" };
-    const diffMs = Date.now() - new Date(entry.createdAt).getTime();
-    if (diffMs > 24 * 60 * 60 * 1000) return { error: "หมดเวลาแก้ไข (เกิน 24 ชั่วโมง) กรุณาติดต่อเจ้าของช่อง" };
   }
 
   const oldAmount = entry.salesAmount;
