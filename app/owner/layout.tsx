@@ -14,6 +14,7 @@ const NAV = [
   { href: "/owner/employees",  label: "พนักงาน",  emoji: "👥" },
   { href: "/owner/leave",      label: "วันลา",   emoji: "🏖️" },
   { href: "/owner/finance",    label: "การเงิน",  emoji: "💰" },
+  { href: "/owner/payroll",    label: "เงินเดือน", emoji: "💵" },
   { href: "/owner/reports",    label: "รายงาน",  emoji: "📈" },
 ];
 
