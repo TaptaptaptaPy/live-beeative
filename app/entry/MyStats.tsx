@@ -6,8 +6,6 @@ type Stats = {
   month: string;
   myMonthSales: number;
   myTodaySales: number;
-  myRank: number | null;
-  totalEmployees: number;
   myIncentive: number;
   mySalary: number;
   targetAmount: number;
@@ -18,8 +16,6 @@ type Stats = {
 function fmt(n: number) {
   return new Intl.NumberFormat("th-TH").format(Math.round(n));
 }
-
-const RANK_EMOJI = ["", "🥇", "🥈", "🥉"];
 
 export default function MyStats() {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -41,18 +37,10 @@ export default function MyStats() {
     <div className="mx-4 mt-3">
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
         {/* Header row */}
-        <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+        <div className="px-4 pt-3 pb-2">
           <span className="text-sm font-bold text-[#1A1A1A]">
             📊 ยอดขายของฉัน ({stats.month.replace("-", "/")})
           </span>
-          {stats.myRank && (
-            <span className="text-sm font-bold text-[#1A1A1A]">
-              {RANK_EMOJI[stats.myRank] || `#${stats.myRank}`}
-              <span className="text-xs text-gray-400 font-normal ml-1">
-                อันดับ {stats.myRank}/{stats.totalEmployees}
-              </span>
-            </span>
-          )}
         </div>
 
         {/* Two main stats */}

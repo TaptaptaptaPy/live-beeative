@@ -8,9 +8,14 @@ import MyRecentEntries from "./MyRecentEntries";
 import MySchedule from "./MySchedule";
 import MyStats from "./MyStats";
 
-type LiveSession = { id: string; name: string; startTime: string; endTime: string };
 type SessionInfo = { name: string; role: string; profileImage: string | null };
 type Brand = { id: string; name: string; commissionRate: number; color: string };
+
+const TIME_PRESETS = [
+  { id: "morning", name: "☀️ เช้า",  startTime: "09:00", endTime: "16:00", sub: "09:00 – 16:00 น." },
+  { id: "evening", name: "🌙 เย็น",  startTime: "16:00", endTime: "00:00", sub: "16:00 – 24:00 น." },
+  { id: "custom",  name: "⚙️ กำหนดเอง", startTime: "",    endTime: "",    sub: "ระบุเวลาเอง" },
+];
 
 const PLATFORMS = [
   { value: "TIKTOK",   label: "TikTok",   emoji: "🎵" },
@@ -28,13 +33,11 @@ function getMinDate(role: string): string {
 }
 
 export default function EntryPage() {
-  const [sessions, setSessions] = useState<LiveSession[]>([]);
   const [userSession, setUserSession] = useState<SessionInfo | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [brandId, setBrandId] = useState("");
   const [date, setDate] = useState(todayString());
-  const [sessionId, setSessionId] = useState("");
-  const [isCustomTime, setIsCustomTime] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState("");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [platform, setPlatform] = useState("");
@@ -45,10 +48,12 @@ export default function EntryPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/sessions").then(r => r.json()).then(setSessions).catch(() => {});
     fetch("/api/me").then(r => r.json()).then(setUserSession).catch(() => {});
     fetch("/api/brands").then(r => r.json()).then(setBrands).catch(() => {});
   }, []);
+
+  const isCustomTime = selectedPreset === "custom";
+  const activePreset = TIME_PRESETS.find(p => p.id === selectedPreset);
 
   const today = todayString();
   const minDate = userSession ? getMinDate(userSession.role) : today;
@@ -58,7 +63,7 @@ export default function EntryPage() {
     e.preventDefault();
     if (!platform) return setError("กรุณาเลือก Platform");
     if (!salesAmount || parseFloat(salesAmount) < 0) return setError("กรุณากรอกยอดขาย");
-    if (!sessionId && !isCustomTime) return setError("กรุณาเลือกช่วงเวลา");
+    if (!selectedPreset) return setError("กรุณาเลือกช่วงเวลา");
 
     setLoading(true);
     setError("");
@@ -66,8 +71,10 @@ export default function EntryPage() {
     fd.append("platform", platform);
     fd.append("salesAmount", salesAmount);
     fd.append("date", date);
-    if (sessionId && !isCustomTime) fd.append("sessionId", sessionId);
-    if (isCustomTime) { fd.append("customStart", customStart); fd.append("customEnd", customEnd); }
+    const start = isCustomTime ? customStart : (activePreset?.startTime ?? "");
+    const end   = isCustomTime ? customEnd   : (activePreset?.endTime ?? "");
+    if (start) fd.append("customStart", start);
+    if (end)   fd.append("customEnd", end);
     if (notes) fd.append("notes", notes);
     if (brandId) fd.append("brandId", brandId);
 
@@ -78,7 +85,7 @@ export default function EntryPage() {
   }
 
   function resetForm() {
-    setSessionId(""); setIsCustomTime(false); setCustomStart(""); setCustomEnd("");
+    setSelectedPreset(""); setCustomStart(""); setCustomEnd("");
     setPlatform(""); setSalesAmount(""); setNotes(""); setDate(todayString());
     setBrandId(""); setError(""); setSuccess(false);
   }
@@ -169,33 +176,29 @@ export default function EntryPage() {
         {/* Session */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
           <label className="block text-[#1A1A1A] font-semibold mb-3">⏰ ช่วงเวลาไลฟ์</label>
-          <div className="flex gap-2 overflow-x-auto pb-2 snap-x -mx-1 px-1">
-            {sessions.map(s => (
-              <button key={s.id} type="button"
-                onClick={() => { setSessionId(s.id); setIsCustomTime(false); }}
-                className={`flex-shrink-0 snap-start p-3 rounded-xl border-2 text-left transition-all min-w-[120px] ${sessionId === s.id && !isCustomTime ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200"}`}>
-                <div className="font-semibold text-[#1A1A1A]">{s.name}</div>
-                <div className="text-sm text-gray-500">{s.startTime} – {s.endTime} น.</div>
+          <div className="grid grid-cols-3 gap-2">
+            {TIME_PRESETS.map(p => (
+              <button key={p.id} type="button"
+                onClick={() => setSelectedPreset(p.id)}
+                className={`p-3 rounded-xl border-2 text-center transition-all ${
+                  selectedPreset === p.id ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200"
+                }`}>
+                <div className="font-semibold text-[#1A1A1A] text-sm">{p.name}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{p.sub}</div>
               </button>
             ))}
-            <button type="button"
-              onClick={() => { setIsCustomTime(true); setSessionId(""); }}
-              className={`flex-shrink-0 snap-start p-3 rounded-xl border-2 text-left transition-all min-w-[120px] ${isCustomTime ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200"}`}>
-              <div className="font-semibold text-[#1A1A1A]">กำหนดเวลาเอง</div>
-              <div className="text-sm text-gray-500">ระบุช่วงเวลาเอง</div>
-            </button>
           </div>
           {isCustomTime && (
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div>
                 <label className="text-sm text-gray-500 mb-1 block">เริ่ม</label>
                 <input type="time" value={customStart} onChange={e => setCustomStart(e.target.value)}
-                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#F5D400]" />
+                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-3 focus:outline-none focus:border-[#F5D400]" />
               </div>
               <div>
                 <label className="text-sm text-gray-500 mb-1 block">สิ้นสุด</label>
                 <input type="time" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
-                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#F5D400]" />
+                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-3 focus:outline-none focus:border-[#F5D400]" />
               </div>
             </div>
           )}
