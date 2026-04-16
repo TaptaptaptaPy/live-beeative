@@ -25,6 +25,7 @@ model User {
   entries           TimeEntry[]
   bulkEntries       BulkEntry[]
   salesTargets      SalesTarget[]
+  campaignTargets   CampaignTarget[]
   workSchedules     WorkSchedule[]
   leaveEntitlements LeaveEntitlement[]
   leaveUsed         LeaveUsed[]
@@ -146,6 +147,20 @@ model ExpenseBudget {
   id        String   @id @default(cuid())
   month     String   @unique // YYYY-MM
   amount    Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// เป้าพิเศษตามแคมเปญ / เทศกาล (กำหนดเองได้)
+model CampaignTarget {
+  id        String   @id @default(cuid())
+  name      String   // ชื่อแคมเปญ เช่น "11.11", "วาเลนไทน์"
+  startDate String   // YYYY-MM-DD
+  endDate   String   // YYYY-MM-DD
+  amount    Float    // เป้ายอดขายรวม
+  userId    String?  // null = เป้าทีม, มี userId = เป้าเฉพาะคน
+  notes     String?
+  user      User?    @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -273,4 +288,5 @@ enum TargetPeriod {
   DAILY
   WEEKLY
   MONTHLY
+  YEARLY
 }

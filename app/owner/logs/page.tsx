@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import type { LogAction } from "@/app/generated/prisma/client";
+import PinGate from "./PinGate";
 
 // ── Action metadata ────────────────────────────────────────────────────────
 
@@ -94,6 +95,7 @@ export default async function LogsPage({
   }
 
   return (
+    <PinGate>
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
       <div className="pt-2">
         <h1 className="text-2xl font-bold text-[#1A1A1A]">🗒️ ประวัติกิจกรรม</h1>
@@ -204,5 +206,6 @@ export default async function LogsPage({
         </div>
       )}
     </div>
+    </PinGate>
   );
 }

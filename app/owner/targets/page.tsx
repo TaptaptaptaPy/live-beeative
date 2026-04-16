@@ -2,9 +2,11 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import TargetsForm from "./TargetsForm";
+import CampaignForm from "./CampaignForm";
+import DeleteCampaignButton from "./DeleteCampaignButton";
 import Link from "next/link";
 
-type Period = "DAILY" | "WEEKLY" | "MONTHLY";
+type Period = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
 
 function getISOWeek(date: Date): number {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -20,11 +22,15 @@ function getCurrentDateKey(period: Period): string {
     const week = getISOWeek(now);
     return `${now.getFullYear()}-W${String(week).padStart(2, "0")}`;
   }
+  if (period === "YEARLY") return String(now.getFullYear());
   return now.toISOString().slice(0, 7);
 }
 
 function getDateRange(period: Period, dateKey: string): { start: string; end: string } {
   if (period === "DAILY") return { start: dateKey, end: dateKey };
+  if (period === "YEARLY") {
+    return { start: `${dateKey}-01-01`, end: `${dateKey}-12-31` };
+  }
   if (period === "MONTHLY") {
     const [y, m] = dateKey.split("-");
     const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
@@ -59,6 +65,10 @@ function getLabel(period: Period, dateKey: string): string {
     const e = new Date(end + "T00:00:00").toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
     return `สัปดาห์ ${dateKey.split("-W")[1]} (${s} – ${e})`;
   }
+  if (period === "YEARLY") {
+    const buddhistYear = parseInt(dateKey) + 543;
+    return `ปี ${buddhistYear} (พ.ศ.)`;
+  }
   return new Date(dateKey + "-01").toLocaleDateString("th-TH", { year: "numeric", month: "long" });
 }
 
@@ -74,6 +84,9 @@ function navDateKey(period: Period, dateKey: string, dir: 1 | -1): string {
     if (newWeek < 1) return `${y - 1}-W52`;
     if (newWeek > 52) return `${y + 1}-W01`;
     return `${y}-W${String(newWeek).padStart(2, "0")}`;
+  }
+  if (period === "YEARLY") {
+    return String(parseInt(dateKey) + dir);
   }
   // MONTHLY
   const [y, m] = dateKey.split("-").map(Number);
@@ -95,7 +108,7 @@ export default async function TargetsPage({
   // Current month for expense budget (always monthly)
   const currentMonth = today.slice(0, 7);
 
-  const [employees, salesTargets, expenseBudget, actualSales] = await Promise.all([
+  const [employees, salesTargets, expenseBudget, actualSales, campaignTargets] = await Promise.all([
     prisma.user.findMany({ where: { role: "EMPLOYEE", isActive: true, deletedAt: null }, orderBy: { name: "asc" } }),
     prisma.salesTarget.findMany({ where: { period, dateKey }, include: { user: true } }),
     prisma.expenseBudget.findUnique({ where: { month: currentMonth } }),
@@ -104,6 +117,7 @@ export default async function TargetsPage({
       where: { date: { gte: start, lte: end } },
       _sum: { salesAmount: true },
     }),
+    prisma.campaignTarget.findMany({ orderBy: { startDate: "desc" }, take: 10 }),
   ]);
 
   const totalActual = actualSales.reduce((s, e) => s + (e._sum.salesAmount ?? 0), 0);
@@ -117,10 +131,22 @@ export default async function TargetsPage({
   const prevKey = navDateKey(period, dateKey, -1);
   const nextKey = navDateKey(period, dateKey, 1);
 
+  // Fetch actual sales per campaign
+  const campaignActuals: Record<string, number> = {};
+  for (const camp of campaignTargets) {
+    const rows = await prisma.timeEntry.groupBy({
+      by: ["userId"],
+      where: { date: { gte: camp.startDate, lte: camp.endDate } },
+      _sum: { salesAmount: true },
+    });
+    campaignActuals[camp.id] = rows.reduce((s, r) => s + (r._sum.salesAmount ?? 0), 0);
+  }
+
   const PERIODS: { key: Period; label: string }[] = [
     { key: "DAILY", label: "รายวัน" },
     { key: "WEEKLY", label: "รายสัปดาห์" },
     { key: "MONTHLY", label: "รายเดือน" },
+    { key: "YEARLY", label: "รายปี" },
   ];
 
   return (
@@ -209,6 +235,47 @@ export default async function TargetsPage({
         expenseBudget={expenseBudget?.amount ?? null}
         currentMonth={currentMonth}
       />
+
+      {/* Campaign Targets Section */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-bold text-[#1A1A1A]">🎯 เป้าแคมเปญ / เทศกาล</h2>
+
+        {campaignTargets.length > 0 && (
+          <div className="space-y-2">
+            {campaignTargets.map(camp => {
+              const actual = campaignActuals[camp.id] ?? 0;
+              const pct = camp.amount > 0 ? Math.min((actual / camp.amount) * 100, 100) : 0;
+              return (
+                <div key={camp.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <div className="flex-1">
+                      <div className="font-semibold text-[#1A1A1A] text-sm">{camp.name}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{camp.startDate} – {camp.endDate}</div>
+                      {camp.notes && <div className="text-xs text-gray-400 mt-0.5">{camp.notes}</div>}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs text-gray-500">
+                        ฿{actual.toLocaleString("th-TH", { maximumFractionDigits: 0 })} / ฿{camp.amount.toLocaleString("th-TH", { maximumFractionDigits: 0 })}
+                      </span>
+                      <DeleteCampaignButton id={camp.id} />
+                    </div>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden mt-2">
+                    <div className="h-full rounded-full transition-all"
+                      style={{ width: `${pct}%`, background: pct >= 100 ? "#22c55e" : "linear-gradient(90deg, #F5D400, #F5A882)" }} />
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    {camp.amount > 0 ? pct.toFixed(1) : "0"}%
+                    {actual >= camp.amount && camp.amount > 0 ? " 🎉 ถึงเป้าแล้ว!" : ""}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <CampaignForm />
+      </div>
     </div>
   );
 }

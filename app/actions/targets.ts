@@ -17,7 +17,7 @@ export async function upsertSalesTarget(formData: FormData) {
   const session = await requireOwner();
   if (!session) return { error: "ไม่มีสิทธิ์" };
 
-  const period = formData.get("period") as "DAILY" | "WEEKLY" | "MONTHLY";
+  const period = formData.get("period") as "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
   const dateKey = formData.get("dateKey") as string;
   const userId = (formData.get("userId") as string) || null;
   const amount = parseFloat(formData.get("amount") as string);
@@ -72,5 +72,50 @@ export async function upsertExpenseBudget(formData: FormData) {
 
   revalidatePath("/owner/targets");
   revalidatePath("/owner/finance");
+  return { success: true };
+}
+
+// ── เป้าแคมเปญ / เทศกาล ────────────────────────────────────────────────────
+
+export async function upsertCampaignTarget(formData: FormData) {
+  const session = await requireOwner();
+  if (!session) return { error: "ไม่มีสิทธิ์" };
+
+  const id = (formData.get("id") as string) || null;
+  const name = formData.get("name") as string;
+  const startDate = formData.get("startDate") as string;
+  const endDate = formData.get("endDate") as string;
+  const amount = parseFloat(formData.get("amount") as string);
+  const notes = (formData.get("notes") as string) || null;
+
+  if (!name || !startDate || !endDate || isNaN(amount) || amount < 0)
+    return { error: "ข้อมูลไม่ถูกต้อง" };
+
+  if (id) {
+    await prisma.campaignTarget.update({
+      where: { id },
+      data: { name, startDate, endDate, amount, notes },
+    });
+  } else {
+    await prisma.campaignTarget.create({
+      data: { name, startDate, endDate, amount, notes, userId: session.userId },
+    });
+  }
+
+  await logActivity({
+    userId: session.userId, userName: session.name, userRole: session.role,
+    action: "TARGET_UPDATE",
+    details: JSON.stringify({ type: "campaign", name, startDate, endDate, amount }),
+  });
+
+  revalidatePath("/owner/targets");
+  return { success: true };
+}
+
+export async function deleteCampaignTarget(id: string) {
+  const session = await requireOwner();
+  if (!session) return { error: "ไม่มีสิทธิ์" };
+  await prisma.campaignTarget.delete({ where: { id } });
+  revalidatePath("/owner/targets");
   return { success: true };
 }

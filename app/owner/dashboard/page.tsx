@@ -4,10 +4,41 @@ import { prisma } from "@/lib/prisma";
 import { formatCurrency, getDateRange, PLATFORM_LABELS } from "@/lib/utils";
 import DashboardCharts from "./DashboardCharts";
 
-function getPrevDateRange(period: "today" | "week" | "month"): { start: string; end: string } {
+type Period = "today" | "week" | "month" | "year" | "custom";
+
+function fmt(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function getCustomDateRange(period: Period, customStart?: string, customEnd?: string): { start: string; end: string } {
   const today = new Date();
-  const fmt = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  if (period === "today") {
+    const s = fmt(today);
+    return { start: s, end: s };
+  }
+  if (period === "week") {
+    const day = today.getDay();
+    const mon = new Date(today);
+    mon.setDate(today.getDate() - ((day + 6) % 7));
+    return { start: fmt(mon), end: fmt(today) };
+  }
+  if (period === "month") {
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    return { start: fmt(firstDay), end: fmt(today) };
+  }
+  if (period === "year") {
+    return { start: `${today.getFullYear()}-01-01`, end: fmt(today) };
+  }
+  // custom
+  return {
+    start: customStart || fmt(today),
+    end: customEnd || fmt(today),
+  };
+}
+
+function getPrevDateRange(period: Period, customStart?: string, customEnd?: string): { start: string; end: string } {
+  const today = new Date();
 
   if (period === "today") {
     const d = new Date(today);
@@ -23,14 +54,30 @@ function getPrevDateRange(period: "today" | "week" | "month"): { start: string; 
     sun.setDate(mon.getDate() + 6);
     return { start: fmt(mon), end: fmt(sun) };
   }
-  const firstDayPrev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const lastDayPrev = new Date(today.getFullYear(), today.getMonth(), 0);
-  return { start: fmt(firstDayPrev), end: fmt(lastDayPrev) };
+  if (period === "month") {
+    const firstDayPrev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastDayPrev = new Date(today.getFullYear(), today.getMonth(), 0);
+    return { start: fmt(firstDayPrev), end: fmt(lastDayPrev) };
+  }
+  if (period === "year") {
+    const prevYear = today.getFullYear() - 1;
+    return { start: `${prevYear}-01-01`, end: `${prevYear}-12-31` };
+  }
+  // custom: same-length window shifted back
+  if (customStart && customEnd) {
+    const start = new Date(customStart);
+    const end = new Date(customEnd);
+    const diffMs = end.getTime() - start.getTime();
+    const prevEnd = new Date(start.getTime() - 1);
+    const prevStart = new Date(prevEnd.getTime() - diffMs);
+    return { start: fmt(prevStart), end: fmt(prevEnd) };
+  }
+  return { start: fmt(today), end: fmt(today) };
 }
 
-async function getDashboardData(period: "today" | "week" | "month") {
-  const { start, end } = getDateRange(period);
-  const { start: prevStart, end: prevEnd } = getPrevDateRange(period);
+async function getDashboardData(period: Period, customStart?: string, customEnd?: string) {
+  const { start, end } = getCustomDateRange(period, customStart, customEnd);
+  const { start: prevStart, end: prevEnd } = getPrevDateRange(period, customStart, customEnd);
 
   const [entries, brands, prevEntries] = await Promise.all([
     prisma.timeEntry.findMany({
@@ -62,7 +109,7 @@ async function getDashboardData(period: "today" | "week" | "month") {
     byPlatform[e.platform] = (byPlatform[e.platform] || 0) + e.salesAmount;
   }
 
-  // Daily trend (last 7 days for week/month, or just today)
+  // Daily trend
   const dailyMap: Record<string, number> = {};
   for (const e of entries) {
     dailyMap[e.date] = (dailyMap[e.date] || 0) + e.salesAmount;
@@ -137,44 +184,94 @@ async function getDashboardData(period: "today" | "week" | "month") {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; startDate?: string; endDate?: string }>;
 }) {
-  const { period: rawPeriod } = await searchParams;
-  const period = (rawPeriod as "today" | "week" | "month") || "today";
-  const data = await getDashboardData(period);
+  const { period: rawPeriod, startDate, endDate } = await searchParams;
+  const period = (rawPeriod as Period) || "today";
+  const data = await getDashboardData(period, startDate, endDate);
 
   const PERIODS = [
     { key: "today", label: "วันนี้" },
     { key: "week", label: "สัปดาห์นี้" },
     { key: "month", label: "เดือนนี้" },
+    { key: "year", label: "ปีนี้" },
+    { key: "custom", label: "กำหนดเอง" },
   ];
 
   const PLATFORM_EMOJI: Record<string, string> = { TIKTOK: "🎵", SHOPEE: "🛒", FACEBOOK: "📘", OTHER: "📱" };
+
+  const prevLabel =
+    period === "today" ? "เมื่อวาน"
+    : period === "week" ? "สัปดาห์ก่อน"
+    : period === "month" ? "เดือนก่อน"
+    : period === "year" ? "ปีก่อน"
+    : "ช่วงเดียวกันปีก่อน";
+
+  // Default date values for the custom date picker
+  const today = new Date();
+  const todayStr = fmt(today);
+  const firstOfMonth = fmt(new Date(today.getFullYear(), today.getMonth(), 1));
 
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-800 pt-2">Dashboard</h1>
 
       {/* Period selector */}
-      <div className="flex gap-2 bg-gray-100 p-1 rounded-2xl">
-        {PERIODS.map((p) => (
-          <a
-            key={p.key}
-            href={`?period=${p.key}`}
-            className={`flex-1 text-center py-2 rounded-xl text-sm font-semibold transition-all ${
-              period === p.key ? "text-[#1A1A1A] shadow-sm" : "text-gray-500"
-            }`}
-            style={period === p.key ? { background: "linear-gradient(135deg, #F5D400, #F5A882)" } : {}}
-          >
-            {p.label}
-          </a>
-        ))}
+      <div className="overflow-x-auto -mx-1 px-1">
+        <div className="flex gap-2 bg-gray-100 p-1 rounded-2xl min-w-max">
+          {PERIODS.map((p) => (
+            <a
+              key={p.key}
+              href={`?period=${p.key}`}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
+                period === p.key ? "text-[#1A1A1A] shadow-sm" : "text-gray-500"
+              }`}
+              style={period === p.key ? { background: "linear-gradient(135deg, #F5D400, #F5A882)" } : {}}
+            >
+              {p.label}
+            </a>
+          ))}
+        </div>
       </div>
+
+      {/* Custom date range form */}
+      {period === "custom" && (
+        <form method="GET" action="" className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+          <input type="hidden" name="period" value="custom" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="text-sm text-gray-600 font-medium w-full sm:w-auto">ช่วงวันที่</label>
+            <div className="flex items-center gap-2 flex-1 flex-wrap">
+              <input
+                type="date"
+                name="startDate"
+                defaultValue={startDate || firstOfMonth}
+                max={todayStr}
+                className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+              />
+              <span className="text-gray-400 text-sm">ถึง</span>
+              <input
+                type="date"
+                name="endDate"
+                defaultValue={endDate || todayStr}
+                max={todayStr}
+                className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-xl text-sm font-semibold text-[#1A1A1A] shadow-sm whitespace-nowrap"
+              style={{ background: "linear-gradient(135deg, #F5D400, #F5A882)" }}
+            >
+              ดู
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* Period label */}
       {data.prevTotalSales > 0 && (
         <div className="text-xs text-gray-400 text-right -mb-2">
-          เทียบกับ{period === "today" ? "เมื่อวาน" : period === "week" ? "สัปดาห์ก่อน" : "เดือนก่อน"} ({formatCurrency(data.prevTotalSales)})
+          เทียบกับ{prevLabel} ({formatCurrency(data.prevTotalSales)})
         </div>
       )}
 

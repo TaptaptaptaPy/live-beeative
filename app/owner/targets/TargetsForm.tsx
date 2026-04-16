@@ -3,7 +3,7 @@
 import { upsertSalesTarget, upsertExpenseBudget } from "@/app/actions/targets";
 import { useState } from "react";
 
-type Period = "DAILY" | "WEEKLY" | "MONTHLY";
+type Period = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
 
 type Props = {
   period: Period;

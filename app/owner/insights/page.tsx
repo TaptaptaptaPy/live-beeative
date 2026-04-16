@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, PLATFORM_LABELS } from "@/lib/utils";
 import InsightsTrendChart from "./InsightsTrendChart";
+import ExportButton from "./ExportButton";
 
 const PLATFORM_EMOJI: Record<string, string> = {
   TIKTOK: "🎵", SHOPEE: "🛒", FACEBOOK: "📘", OTHER: "📱",
@@ -212,9 +213,21 @@ export default async function InsightsPage({
   const maxPlat = Math.max(...platList.map((p) => p.total), 1);
   const maxEmp = Math.max(...empList.map((e) => e.total), 1);
 
+  const exportEntries = entries.map((e) => ({
+    date: e.date,
+    userName: e.user.name,
+    platform: e.platform,
+    salesAmount: e.salesAmount,
+    customStart: e.customStart,
+    customEnd: e.customEnd,
+  }));
+
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto pb-28">
-      <h1 className="text-2xl font-bold text-[#1A1A1A] pt-2">🔍 วิเคราะห์ยอดขาย</h1>
+      <div className="flex items-center justify-between pt-2">
+        <h1 className="text-2xl font-bold text-[#1A1A1A]">🔍 วิเคราะห์ยอดขาย</h1>
+        <ExportButton entries={exportEntries} days={days} dateRange={`${days} วันที่ผ่านมา`} />
+      </div>
 
       {/* Period selector */}
       <div className="flex gap-2">

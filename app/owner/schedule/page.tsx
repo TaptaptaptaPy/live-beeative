@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { PLATFORM_LABELS } from "@/lib/utils";
 import ScheduleForm from "./ScheduleForm";
 import DeleteScheduleButton from "./DeleteScheduleButton";
+import WeekPicker from "./WeekPicker";
 
 function getWeekDates(dateStr: string) {
   const d = new Date(dateStr);
@@ -176,9 +177,12 @@ export default async function SchedulePage({
       <div className="bg-white rounded-2xl p-3 shadow-sm flex items-center justify-between">
         <a href={buildUrl({ week: prevWeek() })}
           className="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-gray-200 text-gray-600 hover:border-[#F5D400] text-lg">‹</a>
-        <div className="text-center">
-          <div className="font-semibold text-[#1A1A1A]">{weekDates[0].slice(5)} – {weekDates[6].slice(5)}</div>
-          <div className="text-xs text-gray-400">{weekStart.slice(0, 7)}</div>
+        <div className="flex items-center gap-2">
+          <div className="text-center">
+            <div className="font-semibold text-[#1A1A1A]">{weekDates[0].slice(5)} – {weekDates[6].slice(5)}</div>
+            <div className="text-xs text-gray-400">{weekStart.slice(0, 7)}</div>
+          </div>
+          <WeekPicker weekStart={weekStart} userId={filterUserId} />
         </div>
         <a href={buildUrl({ week: nextWeek() })}
           className="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-gray-200 text-gray-600 hover:border-[#F5D400] text-lg">›</a>
@@ -229,6 +233,13 @@ export default async function SchedulePage({
           </a>
         ))}
       </div>
+
+      {/* Add schedule form */}
+      <ScheduleForm
+        employees={employees.map((e) => ({ id: e.id, name: e.name }))}
+        brands={brands}
+        defaultDate={today}
+      />
 
       {/* Schedule by day */}
       <div className="space-y-3">
@@ -460,12 +471,6 @@ export default async function SchedulePage({
         })}
       </div>
 
-      {/* Add schedule form */}
-      <ScheduleForm
-        employees={employees.map((e) => ({ id: e.id, name: e.name }))}
-        brands={brands}
-        defaultDate={today}
-      />
     </div>
   );
 }
