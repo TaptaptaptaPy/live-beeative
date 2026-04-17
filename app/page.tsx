@@ -5,7 +5,7 @@ import { employeeLogin } from "./actions/auth";
 import { setFirstPin } from "./actions/employees";
 import { useRouter } from "next/navigation";
 
-type Employee = { id: string; name: string; pinSet: boolean; profileImage: string | null };
+type Employee = { id: string; name: string; pinSet: boolean; profileImage: string | null; isOwnerEmployee: boolean };
 type Step = "select" | "pin" | "set-pin";
 
 const NUMPAD = [
@@ -141,7 +141,12 @@ export default function EmployeeHome() {
                       </div>
                     )}
                   </div>
-                  <span className="font-bold text-[#1A1A1A] flex-1 text-left">{emp.name}</span>
+                  <div className="flex-1 text-left">
+                    <span className="font-bold text-[#1A1A1A]">{emp.name}</span>
+                    {emp.isOwnerEmployee && (
+                      <span className="ml-2 text-xs text-[#F5A882] font-medium">(เจ้าของร้าน)</span>
+                    )}
+                  </div>
                   {!emp.pinSet && (
                     <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">ตั้ง PIN</span>
                   )}

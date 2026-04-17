@@ -166,3 +166,48 @@ export async function deleteEmployee(id: string) {
   revalidatePath(`/owner/employees/${id}`);
   return { success: true };
 }
+
+// ── Owner-Employee flag ──────────────────────────────────────────────────────
+
+export async function setOwnerEmployee(userId: string, value: boolean) {
+  const session = await requireOwner();
+  // Only one employee can be the owner's profile
+  if (value) {
+    await prisma.user.updateMany({ where: { isOwnerEmployee: true }, data: { isOwnerEmployee: false } });
+  }
+  await prisma.user.update({ where: { id: userId }, data: { isOwnerEmployee: value } });
+  await logActivity({
+    userId: session.userId, userName: session.name, userRole: session.role,
+    action: "EMPLOYEE_UPDATE",
+    details: JSON.stringify({ id: userId, isOwnerEmployee: value }),
+  });
+  revalidatePath("/owner/employees");
+  revalidatePath(`/owner/employees/${userId}`);
+  return { success: true };
+}
+
+// ── Migrate OWNER entries → employee profile ─────────────────────────────────
+
+export async function migrateOwnerEntries(employeeId: string) {
+  const session = await requireOwner();
+  const owner = await prisma.user.findFirst({ where: { role: "OWNER" } });
+  if (!owner) return { error: "ไม่พบ owner" };
+
+  const count = await prisma.timeEntry.count({ where: { userId: owner.id } });
+  if (count === 0) return { success: true, count: 0 };
+
+  await prisma.timeEntry.updateMany({
+    where: { userId: owner.id },
+    data: { userId: employeeId },
+  });
+
+  await logActivity({
+    userId: session.userId, userName: session.name, userRole: session.role,
+    action: "ENTRY_EDIT",
+    details: JSON.stringify({ migration: "owner→employee", movedCount: count, employeeId }),
+  });
+
+  revalidatePath("/owner/entries");
+  revalidatePath("/owner/dashboard");
+  return { success: true, count };
+}

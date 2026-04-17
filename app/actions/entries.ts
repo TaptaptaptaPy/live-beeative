@@ -172,3 +172,59 @@ export async function deleteEntry(id: string) {
   revalidatePath("/owner/reports");
   return { success: true };
 }
+
+// ── Owner creates entry for any employee ────────────────────────────────────
+
+export async function createEntryAsOwner(formData: FormData) {
+  const session = await getSession();
+  if (!session || session.role !== "OWNER") return { error: "ไม่มีสิทธิ์" };
+
+  const targetUserId = formData.get("targetUserId") as string;
+  if (!targetUserId) return { error: "กรุณาเลือกพนักงาน" };
+
+  const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!targetUser) return { error: "ไม่พบพนักงาน" };
+
+  const platform = formData.get("platform") as string;
+  const salesAmount = parseFloat(formData.get("salesAmount") as string);
+  const date = formData.get("date") as string;
+  const customStart = (formData.get("customStart") as string) || null;
+  const customEnd = (formData.get("customEnd") as string) || null;
+  const notes = (formData.get("notes") as string) || null;
+  const brandId = (formData.get("brandId") as string) || null;
+
+  if (!platform || isNaN(salesAmount) || salesAmount < 0 || !date) {
+    return { error: "กรุณากรอกข้อมูลให้ครบ" };
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const isBackdated = date !== today;
+
+  await prisma.timeEntry.create({
+    data: {
+      userId: targetUserId,
+      brandId: brandId || null,
+      platform: platform as "TIKTOK" | "SHOPEE" | "FACEBOOK" | "OTHER",
+      salesAmount,
+      date,
+      notes,
+      customStart,
+      customEnd,
+      isBackdated,
+    },
+  });
+
+  await logActivity({
+    userId: session.userId,
+    userName: session.name,
+    userRole: "OWNER",
+    action: "ENTRY_CREATE",
+    details: JSON.stringify({ platform, salesAmount, date, isBackdated, forEmployee: targetUser.name }),
+  });
+
+  revalidatePath("/owner/dashboard");
+  revalidatePath("/owner/entries");
+  revalidatePath("/owner/finance");
+  revalidatePath("/owner/reports");
+  return { success: true };
+}

@@ -95,6 +95,48 @@ export async function devSwitchToOwner() {
   return { success: true };
 }
 
+// ── Owner-Employee swap (Bee ↔ Owner) ──────────────────────────────────────
+
+// Bee (isOwnerEmployee) switches to owner mode
+export async function switchToOwnerMode() {
+  const session = await getSession();
+  if (!session || session.role !== "EMPLOYEE") return { error: "ไม่มีสิทธิ์" };
+
+  const user = await prisma.user.findUnique({ where: { id: session.userId } });
+  if (!user?.isOwnerEmployee) return { error: "ไม่มีสิทธิ์" };
+
+  const owner = await prisma.user.findFirst({ where: { role: "OWNER" } });
+  if (!owner) return { error: "ไม่พบ owner" };
+
+  // Preserve dev mode if active
+  await createSession({
+    userId: owner.id,
+    role: "OWNER",
+    name: owner.name,
+    isDevMode: session.isDevMode,
+  });
+  return { success: true };
+}
+
+// Owner switches back to their employee profile (Bee)
+export async function switchToEmployeeMode() {
+  const session = await getSession();
+  if (!session || session.role !== "OWNER") return { error: "ไม่มีสิทธิ์" };
+
+  const ownerEmployee = await prisma.user.findFirst({
+    where: { role: "EMPLOYEE", isOwnerEmployee: true, isActive: true },
+  });
+  if (!ownerEmployee) return { error: "ไม่พบ employee profile ของเจ้าของร้าน" };
+
+  await createSession({
+    userId: ownerEmployee.id,
+    role: "EMPLOYEE",
+    name: ownerEmployee.name,
+    isDevMode: session.isDevMode,
+  });
+  return { success: true };
+}
+
 export async function logout() {
   const session = await getSession();
   if (session) {

@@ -6,7 +6,7 @@ export async function GET() {
   if (!session) return NextResponse.json(null);
   const user = await (await import("@/lib/prisma")).prisma.user.findUnique({
     where: { id: session.userId },
-    select: { profileImage: true },
+    select: { profileImage: true, isOwnerEmployee: true },
   });
   return NextResponse.json({
     name: session.name,
@@ -14,5 +14,6 @@ export async function GET() {
     profileImage: user?.profileImage ?? null,
     isDevMode: session.isDevMode ?? false,
     devAsUserName: session.devAsUserName ?? null,
+    isOwnerEmployee: user?.isOwnerEmployee ?? false,
   });
 }

@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { createEntry } from "../actions/entries";
-import { logout } from "../actions/auth";
+import { logout, switchToOwnerMode } from "../actions/auth";
 import { todayString } from "@/lib/utils";
 import MyRecentEntries from "./MyRecentEntries";
 import MySchedule from "./MySchedule";
 import MyStats from "./MyStats";
 import DevBanner from "@/app/dev/DevBanner";
+import { useRouter } from "next/navigation";
 
-type SessionInfo = { name: string; role: string; profileImage: string | null };
+type SessionInfo = { name: string; role: string; profileImage: string | null; isOwnerEmployee?: boolean };
 type Brand = { id: string; name: string; commissionRate: number; color: string };
 
 const TIME_PRESETS = [
@@ -27,7 +28,9 @@ const PLATFORMS = [
 
 
 export default function EntryPage() {
+  const router = useRouter();
   const [userSession, setUserSession] = useState<SessionInfo | null>(null);
+  const [swapping, setSwapping] = useState(false);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [brandId, setBrandId] = useState("");
   const [date, setDate] = useState(todayString());
@@ -139,10 +142,26 @@ export default function EntryPage() {
             <p className="text-[#1A1A1A]/70 text-xs">{userSession?.name || "..."}</p>
           </div>
         </div>
-        <button onClick={() => logout()}
-          className="text-sm border border-[#1A1A1A]/30 rounded-xl px-3 py-1">
-          ออก
-        </button>
+        <div className="flex items-center gap-2">
+          {userSession?.isOwnerEmployee && (
+            <button
+              onClick={async () => {
+                setSwapping(true);
+                const res = await switchToOwnerMode();
+                if (res?.error) { alert(res.error); setSwapping(false); }
+                else router.push("/owner/dashboard");
+              }}
+              disabled={swapping}
+              className="text-xs font-semibold border-2 border-[#1A1A1A]/40 rounded-xl px-3 py-1 bg-[#1A1A1A]/10 disabled:opacity-50"
+            >
+              {swapping ? "..." : "👑 Owner"}
+            </button>
+          )}
+          <button onClick={() => logout()}
+            className="text-sm border border-[#1A1A1A]/30 rounded-xl px-3 py-1">
+            ออก
+          </button>
+        </div>
       </div>
 
       <MyStats />

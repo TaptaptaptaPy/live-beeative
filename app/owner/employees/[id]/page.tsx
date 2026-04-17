@@ -8,7 +8,9 @@ import Link from "next/link";
 export default async function EmployeeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [emp, totalEntries, totalSales, leaveEntitlements, leaveUsed] = await Promise.all([
+  // Count owner-role entries that can be migrated to this employee
+  const ownerUser = await prisma.user.findFirst({ where: { role: "OWNER" } });
+  const [emp, totalEntries, totalSales, leaveEntitlements, leaveUsed, ownerEntryCount] = await Promise.all([
     prisma.user.findUnique({ where: { id } }),
     prisma.timeEntry.count({ where: { userId: id } }),
     prisma.timeEntry.aggregate({ where: { userId: id }, _sum: { salesAmount: true } }),
@@ -20,6 +22,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
       orderBy: { date: "desc" },
       take: 20,
     }),
+    ownerUser ? prisma.timeEntry.count({ where: { userId: ownerUser.id } }) : Promise.resolve(0),
   ]);
 
   if (!emp || emp.role !== "EMPLOYEE") notFound();
@@ -56,7 +59,14 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
           )}
         </div>
         <div>
-          <div className="text-xl font-bold text-[#1A1A1A]">{emp.name}</div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xl font-bold text-[#1A1A1A]">{emp.name}</span>
+            {emp.isOwnerEmployee && (
+              <span className="text-xs bg-[#FFF8CC] text-[#1A1A1A] border border-[#F5D400] rounded-full px-2 py-0.5 font-medium">
+                👑 เจ้าของร้าน
+              </span>
+            )}
+          </div>
           <div className="text-sm text-gray-500 mt-1">
             {emp.isActive ? "✅ ใช้งานอยู่" : "⛔ ปิดการใช้งาน"} ·{" "}
             {emp.pinSet ? "🔒 ตั้ง PIN แล้ว" : "⚠️ ยังไม่ตั้ง PIN"}
@@ -85,7 +95,8 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
         id: emp.id, name: emp.name, salary: emp.salary,
         incentiveRate: emp.incentiveRate, isActive: emp.isActive,
         pinSet: emp.pinSet, profileImage: emp.profileImage ?? "",
-        showSalary: emp.showSalary,
+        showSalary: emp.showSalary, isOwnerEmployee: emp.isOwnerEmployee,
+        ownerEntryCount,
       }} />
 
       {/* Leave summary */}

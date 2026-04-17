@@ -1,6 +1,6 @@
 "use client";
 
-import { updateEmployee, deleteEmployee } from "@/app/actions/employees";
+import { updateEmployee, deleteEmployee, setOwnerEmployee, migrateOwnerEntries } from "@/app/actions/employees";
 import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
 
@@ -8,6 +8,7 @@ type Props = {
   employee: {
     id: string; name: string; salary: number; incentiveRate: number;
     isActive: boolean; pinSet: boolean; profileImage: string; showSalary: boolean;
+    isOwnerEmployee: boolean; ownerEntryCount: number;
   };
 };
 
@@ -15,6 +16,9 @@ export default function EmployeeEditForm({ employee: emp }: Props) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [ownerToggling, setOwnerToggling] = useState(false);
+  const [migrating, setMigrating] = useState(false);
+  const [migrateResult, setMigrateResult] = useState<string | null>(null);
   const router = useRouter();
   const [previewImg, setPreviewImg] = useState(emp.profileImage || "");
   const [deleting, setDeleting] = useState(false);
@@ -162,6 +166,64 @@ export default function EmployeeEditForm({ employee: emp }: Props) {
           style={{ background: "linear-gradient(135deg, #F5D400, #F5A882)" }}>
           {loading ? "กำลังบันทึก..." : "💾 บันทึกการเปลี่ยนแปลง"}
         </button>
+
+        {/* Owner-employee toggle */}
+        <div className="pt-2 border-t border-gray-100 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-medium text-gray-700">👑 Profile เจ้าของร้าน</div>
+              <div className="text-xs text-gray-400 mt-0.5">พนักงานคนนี้คือเจ้าของร้านด้วย → จะเห็นปุ่ม Swap to Owner ในหน้าบันทึกยอด</div>
+            </div>
+            <button
+              type="button"
+              disabled={ownerToggling}
+              onClick={async () => {
+                setOwnerToggling(true);
+                await setOwnerEmployee(emp.id, !emp.isOwnerEmployee);
+                router.refresh();
+                setOwnerToggling(false);
+              }}
+              className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 disabled:opacity-50 ${
+                emp.isOwnerEmployee ? "bg-[#F5D400]" : "bg-gray-200"
+              }`}
+            >
+              <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                emp.isOwnerEmployee ? "left-7" : "left-1"
+              }`} />
+            </button>
+          </div>
+
+          {/* Migration card — only show when isOwnerEmployee and there are owner entries */}
+          {emp.isOwnerEmployee && emp.ownerEntryCount > 0 && (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
+              <div className="text-sm font-medium text-orange-800 mb-1">📦 ย้ายข้อมูลยอดขาย</div>
+              <p className="text-xs text-orange-700 mb-3">
+                พบ <strong>{emp.ownerEntryCount} รายการ</strong> ที่ถูกบันทึกในชื่อ Owner (เจ้าของร้าน)
+                อยากย้ายมาผูกกับ "{emp.name}" ไหม? ข้อมูลยอดขายจะยังครบถ้วน แค่เปลี่ยนชื่อที่แสดง
+              </p>
+              {migrateResult ? (
+                <div className="text-xs text-green-700 font-medium">✅ {migrateResult}</div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={migrating}
+                  onClick={async () => {
+                    if (!confirm(`ย้าย ${emp.ownerEntryCount} รายการจาก Owner → ${emp.name}?\nไม่มีผลต่อยอดขาย เพียงแค่ผูกชื่อใหม่`)) return;
+                    setMigrating(true);
+                    const res = await migrateOwnerEntries(emp.id);
+                    if (res?.error) alert(res.error);
+                    else setMigrateResult(`ย้ายสำเร็จ ${res.count} รายการ`);
+                    setMigrating(false);
+                    router.refresh();
+                  }}
+                  className="w-full h-9 rounded-lg text-sm font-semibold text-orange-700 border-2 border-orange-300 hover:bg-orange-100 disabled:opacity-40 transition-all"
+                >
+                  {migrating ? "กำลังย้าย..." : `🔄 ย้าย ${emp.ownerEntryCount} รายการมาผูกกับ ${emp.name}`}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Delete employee */}
         <div className="pt-2 border-t border-gray-100">

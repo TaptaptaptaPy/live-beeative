@@ -22,6 +22,7 @@ model User {
   salary            Float              @default(0)
   showLeave         Boolean            @default(false)
   showSalary        Boolean            @default(false)
+  isOwnerEmployee   Boolean            @default(false)  // true = พนักงานที่เป็นเจ้าของร้านด้วย
   entries           TimeEntry[]
   bulkEntries       BulkEntry[]
   salesTargets      SalesTarget[]
