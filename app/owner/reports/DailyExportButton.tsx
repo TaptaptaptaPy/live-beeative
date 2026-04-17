@@ -83,7 +83,7 @@ export default function DailyExportButton() {
         style={{ background: "linear-gradient(135deg, #F5D400, #F5A882)" }}>
         <h2 className="font-bold text-[#1A1A1A]">📊 Export รายงานรายวัน (.xlsx)</h2>
         <p className="text-xs text-[#1A1A1A]/70 mt-0.5">
-          แยกยอดตามช่วงเวลา: เช้า / เย็น / อื่นๆ — พร้อมชื่อคนลงและยอดขาย
+          1 แถว = 1 รายการ · แยก Platform · เช้า/เย็น ระบุเวลาในหัวตาราง · อื่นๆ ระบุช่วงเวลาในเซลล์
         </p>
       </div>
 
@@ -127,35 +127,61 @@ export default function DailyExportButton() {
 
         {/* Preview of columns */}
         <div className="bg-gray-50 rounded-xl p-3 overflow-x-auto">
-          <p className="text-xs text-gray-400 mb-2 font-medium">Format ที่ได้</p>
-          <table className="text-[10px] border-collapse w-full min-w-[500px]">
+          <p className="text-xs text-gray-400 mb-2 font-medium">Format ที่ได้ (1 แถว = 1 รายการ)</p>
+          <table className="text-[10px] border-collapse min-w-[640px]">
             <thead>
               <tr>
-                <th className="border border-gray-300 px-2 py-1 bg-[#FFF8CC] text-center" rowSpan={2}>วันที่</th>
-                <th className="border border-gray-300 px-2 py-1 bg-blue-50 text-center text-blue-700" colSpan={2}>☀️ เช้า</th>
-                <th className="border border-gray-300 px-2 py-1 bg-purple-50 text-center text-purple-700" colSpan={2}>🌙 เย็น</th>
-                <th className="border border-gray-300 px-2 py-1 bg-orange-50 text-center text-orange-700" colSpan={3}>⚙️ อื่นๆ / กำหนดเอง</th>
+                <th className="border border-gray-300 px-1.5 py-1 bg-gray-100 text-center" rowSpan={2}>#</th>
+                <th className="border border-gray-300 px-1.5 py-1 bg-[#FFF8CC] text-center" rowSpan={2}>วันที่</th>
+                <th className="border border-gray-300 px-1.5 py-1 bg-[#FFF8CC] text-center" rowSpan={2}>ชื่อ</th>
+                <th className="border border-gray-300 px-1.5 py-1 bg-[#FFF8CC] text-center" rowSpan={2}>Platform</th>
+                <th className="border border-gray-300 px-1.5 py-1 bg-blue-50 text-center text-blue-700" rowSpan={2}>☀️ เช้า<br/><span className="font-normal text-[9px]">(09:00–16:00)</span><br/>ยอด</th>
+                <th className="border border-gray-300 px-1.5 py-1 bg-purple-50 text-center text-purple-700" rowSpan={2}>🌙 เย็น<br/><span className="font-normal text-[9px]">(16:00–24:00)</span><br/>ยอด</th>
+                <th className="border border-gray-300 px-1.5 py-1 bg-orange-50 text-center text-orange-700" colSpan={2}>⚙️ อื่นๆ / กำหนดเอง</th>
+                <th className="border border-gray-300 px-1.5 py-1 bg-gray-100 text-center" rowSpan={2}>รวม</th>
               </tr>
               <tr>
-                <th className="border border-gray-300 px-2 py-1 bg-blue-50 text-blue-600">ชื่อคนลง</th>
-                <th className="border border-gray-300 px-2 py-1 bg-blue-50 text-blue-600">ยอด</th>
-                <th className="border border-gray-300 px-2 py-1 bg-purple-50 text-purple-600">ชื่อคนลง</th>
-                <th className="border border-gray-300 px-2 py-1 bg-purple-50 text-purple-600">ยอด</th>
-                <th className="border border-gray-300 px-2 py-1 bg-orange-50 text-orange-600">ชื่อคนลง</th>
-                <th className="border border-gray-300 px-2 py-1 bg-orange-50 text-orange-600">ช่วงเวลา</th>
-                <th className="border border-gray-300 px-2 py-1 bg-orange-50 text-orange-600">ยอด</th>
+                <th className="border border-gray-300 px-1.5 py-1 bg-orange-50 text-orange-600 text-[9px]">ช่วงเวลา</th>
+                <th className="border border-gray-300 px-1.5 py-1 bg-orange-50 text-orange-600 text-[9px]">ยอด</th>
               </tr>
             </thead>
-            <tbody>
-              <tr className="text-gray-500">
-                <td className="border border-gray-200 px-2 py-1 text-center">2026-04-17</td>
-                <td className="border border-gray-200 px-2 py-1 text-center">Bee</td>
-                <td className="border border-gray-200 px-2 py-1 text-center">50,000</td>
-                <td className="border border-gray-200 px-2 py-1 text-center">Bee</td>
-                <td className="border border-gray-200 px-2 py-1 text-center">30,000</td>
-                <td className="border border-gray-200 px-2 py-1 text-center text-gray-400">—</td>
-                <td className="border border-gray-200 px-2 py-1 text-center text-gray-400">—</td>
-                <td className="border border-gray-200 px-2 py-1 text-center text-gray-400">—</td>
+            <tbody className="text-gray-500">
+              <tr>
+                <td className="border border-gray-200 px-1.5 py-1 text-center">1</td>
+                <td className="border border-gray-200 px-1.5 py-1">17/04</td>
+                <td className="border border-gray-200 px-1.5 py-1">Bee</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-center">TikTok</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-right">50,000</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-center text-gray-300">—</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-center text-gray-300">—</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-center text-gray-300">—</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-right">50,000</td>
+              </tr>
+              <tr>
+                <td className="border border-gray-200 px-1.5 py-1 text-center">2</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-gray-300"></td>
+                <td className="border border-gray-200 px-1.5 py-1">Bee</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-center">Shopee</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-center text-gray-300">—</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-right">30,000</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-center text-gray-300">—</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-center text-gray-300">—</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-right">30,000</td>
+              </tr>
+              <tr>
+                <td className="border border-gray-200 px-1.5 py-1 text-center">3</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-gray-300"></td>
+                <td className="border border-gray-200 px-1.5 py-1">Alice</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-center">TikTok</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-center text-gray-300">—</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-center text-gray-300">—</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-[9px]">20:00–23:00</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-right">20,000</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-right">20,000</td>
+              </tr>
+              <tr className="bg-[#FFF8CC] font-medium">
+                <td className="border border-gray-200 px-1.5 py-1" colSpan={8}>สรุปรายบุคคล · Bee: 80,000 · Alice: 20,000</td>
+                <td className="border border-gray-200 px-1.5 py-1 text-right">100,000</td>
               </tr>
             </tbody>
           </table>
