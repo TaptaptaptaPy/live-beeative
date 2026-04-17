@@ -6,6 +6,7 @@ import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import TodayBadge from "./TodayBadge";
 import DevBanner from "@/app/dev/DevBanner";
+import { APP_VERSION } from "@/lib/version";
 
 const NAV = [
   { href: "/owner/dashboard",  label: "ภาพรวม",  emoji: "📊" },
@@ -49,7 +50,13 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
           <span className="text-3xl">🐝</span>
           <div>
             <div className="font-bold text-[#1A1A1A] text-lg leading-tight tracking-tight">Beeative LiveBoard</div>
-            <div className="text-xs text-[#F5A882] font-semibold tracking-wide">ระบบบันทึกยอดไลฟ์</div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#F5A882] font-semibold tracking-wide">ระบบบันทึกยอดไลฟ์</span>
+              <Link href="/owner/changelog"
+                className="text-[10px] text-gray-400 hover:text-gray-600 border border-gray-200 rounded-full px-1.5 py-0.5 leading-none transition-colors">
+                v{APP_VERSION}
+              </Link>
+            </div>
           </div>
         </div>
         <button

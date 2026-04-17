@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import DevSwitchButtons from "./DevSwitchButtons";
+import { APP_VERSION } from "@/lib/version";
 
 export default async function DevHomePage() {
   const session = await getSession();
@@ -40,7 +41,13 @@ export default async function DevHomePage() {
             <h1 className="text-xl font-bold text-white flex items-center gap-2">
               <span className="text-[#F5D400]">⚡</span> Developer Mode
             </h1>
-            <p className="text-gray-500 text-xs mt-0.5">Beeative LiveBoard · Full access</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-gray-500 text-xs">Beeative LiveBoard · Full access</p>
+              <a href="/owner/changelog"
+                className="text-[10px] text-[#F5D400]/70 border border-[#333] rounded-full px-1.5 py-0.5 leading-none hover:text-[#F5D400] transition-colors">
+                v{APP_VERSION}
+              </a>
+            </div>
           </div>
           <form action="/api/dev/logout" method="POST">
             <button className="text-xs text-gray-600 border border-[#333] rounded-lg px-3 py-1.5 hover:border-gray-500 transition-colors text-white">
