@@ -2,7 +2,7 @@
 // APP VERSION — อัปเดตทุกครั้งที่มีการแก้ไข
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const APP_VERSION = "1.11.0";
+export const APP_VERSION = "1.12.0";
 export const APP_VERSION_DATE = "2026-04-17";
 
 export type VersionEntry = {
@@ -14,6 +14,20 @@ export type VersionEntry = {
 };
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "1.12.0",
+    date: "2026-04-17",
+    type: "minor",
+    title: "Export Excel รายงานรายวัน (เช้า/เย็น/อื่นๆ)",
+    changes: [
+      "Export .xlsx format ใหม่ — แยกยอดตามช่วงเวลา: ☀️ เช้า / 🌙 เย็น / ⚙️ อื่นๆ",
+      "แต่ละช่วงมี sub-column: ชื่อคนลง, ยอด (บาท)",
+      "ช่วงอื่นๆ มี sub-column เพิ่ม: ช่วงเวลา (เช่น 20:00–23:00)",
+      "เลือกช่วงวันที่เองได้ + preset ด่วน (เดือนนี้/เดือนที่แล้ว/สัปดาห์นี้/7 วัน)",
+      "แสดง preview format ก่อน download",
+      "วันที่ไม่มียอดยังแสดงเป็นแถวในตารางให้ครบ",
+    ],
+  },
   {
     version: "1.11.0",
     date: "2026-04-17",

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, PLATFORM_LABELS } from "@/lib/utils";
 import ReportsCharts from "./ReportsCharts";
+import DailyExportButton from "./DailyExportButton";
 
 type Granularity = "session" | "day" | "week" | "month";
 
@@ -124,6 +125,9 @@ export default async function ReportsPage({
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-[#1A1A1A] pt-2">📊 รายงานละเอียด</h1>
+
+      {/* Daily Export Card — new format */}
+      <DailyExportButton />
 
       {/* Presets */}
       <div className="flex gap-2 flex-wrap">
