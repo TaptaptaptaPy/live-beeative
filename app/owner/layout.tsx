@@ -11,6 +11,7 @@ import { APP_VERSION } from "@/lib/version";
 const NAV = [
   { href: "/owner/dashboard",  label: "ภาพรวม",  emoji: "📊" },
   { href: "/owner/entry",      label: "บันทึก",   emoji: "✍️" },
+  { href: "/owner/entries",    label: "รายการ",   emoji: "📋" },
   { href: "/owner/schedule",   label: "ตาราง",   emoji: "📅" },
   { href: "/owner/brands",     label: "แบรนด์",  emoji: "🏷️" },
   { href: "/owner/targets",    label: "เป้ายอด",  emoji: "🎯" },
