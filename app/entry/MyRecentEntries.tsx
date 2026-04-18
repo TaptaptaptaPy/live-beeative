@@ -236,12 +236,15 @@ function EntryRow({
 
 // ─── main component ───────────────────────────────────────────────────────────
 
+const DAYS_PER_PAGE = 2;
+
 export default function MyRecentEntries({ isOwnerEmployee = false }: { isOwnerEmployee?: boolean }) {
   const [open, setOpen] = useState(false);
   const [sort, setSort] = useState<SortMode>("log");
   const [scope, setScope] = useState<ScopeMode>("mine");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
 
   const refresh = useCallback(async (s: SortMode, sc: ScopeMode) => {
     setLoading(true);
@@ -254,17 +257,21 @@ export default function MyRecentEntries({ isOwnerEmployee = false }: { isOwnerEm
     if (open) refresh(sort, scope);
   }, [open, sort, scope, refresh]);
 
+  // reset page when filter changes
+  useEffect(() => { setPage(0); }, [sort, scope]);
+
   // ── group entries ──
   const grouped: [string, Entry[]][] =
     sort === "log"
-      ? groupByKey(entries, e => {
-          // group by Bangkok date of createdAt
-          return new Date(e.createdAt).toLocaleDateString("th-TH", {
+      ? groupByKey(entries, e =>
+          new Date(e.createdAt).toLocaleDateString("th-TH", {
             day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Bangkok",
-          });
-        })
-      : groupByKey(entries, e => e.date); // group by sale date
+          })
+        )
+      : groupByKey(entries, e => e.date);
 
+  const totalPages = Math.ceil(grouped.length / DAYS_PER_PAGE);
+  const pagedGroups = grouped.slice(page * DAYS_PER_PAGE, (page + 1) * DAYS_PER_PAGE);
   const showOwner = scope === "all" && isOwnerEmployee;
 
   return (
@@ -283,8 +290,8 @@ export default function MyRecentEntries({ isOwnerEmployee = false }: { isOwnerEm
             {/* Sort toggle */}
             <div className="flex bg-gray-100 rounded-xl p-0.5 gap-0.5">
               {([
-                { v: "log",  label: "🕐 Log" },
-                { v: "date", label: "📅 วันที่ยอด" },
+                { v: "log",  label: "🕐 Log (วันที่บันทึก)" },
+                { v: "date", label: "📅 Sale Date (วันที่ยอด)" },
               ] as { v: SortMode; label: string }[]).map(t => (
                 <button key={t.v}
                   onClick={() => setSort(t.v)}
@@ -321,31 +328,54 @@ export default function MyRecentEntries({ isOwnerEmployee = false }: { isOwnerEm
           ) : entries.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-4">ยังไม่มีรายการ</p>
           ) : (
-            <div className="space-y-4">
-              {grouped.map(([groupKey, groupEntries]) => (
-                <div key={groupKey}>
-                  {/* Group header */}
-                  <div className="text-xs font-semibold text-gray-400 mb-1.5 flex items-center gap-2">
-                    <span className="bg-gray-100 px-2 py-0.5 rounded-full">
-                      {sort === "log" ? groupKey : fmtSaleDate(groupKey)}
-                    </span>
-                    <span className="text-gray-300">{groupEntries.length} รายการ</span>
+            <>
+              <div className="space-y-4">
+                {pagedGroups.map(([groupKey, groupEntries]) => (
+                  <div key={groupKey}>
+                    {/* Group header */}
+                    <div className="text-xs font-semibold text-gray-400 mb-1.5 flex items-center gap-2">
+                      <span className="bg-gray-100 px-2 py-0.5 rounded-full">
+                        {sort === "log" ? groupKey : fmtSaleDate(groupKey)}
+                      </span>
+                      <span className="text-gray-300">{groupEntries.length} รายการ</span>
+                    </div>
+                    {/* Entries */}
+                    <div className="bg-gray-50 rounded-xl px-3">
+                      {groupEntries.map(entry => (
+                        <EntryRow
+                          key={entry.id}
+                          entry={entry}
+                          sortMode={sort}
+                          showOwner={showOwner}
+                          onRefresh={() => refresh(sort, scope)}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  {/* Entries */}
-                  <div className="bg-gray-50 rounded-xl px-3">
-                    {groupEntries.map(entry => (
-                      <EntryRow
-                        key={entry.id}
-                        entry={entry}
-                        sortMode={sort}
-                        showOwner={showOwner}
-                        onRefresh={() => refresh(sort, scope)}
-                      />
-                    ))}
-                  </div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                  <button
+                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-500 disabled:text-gray-200 disabled:cursor-not-allowed px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors disabled:hover:bg-transparent">
+                    ‹ ก่อนหน้า
+                  </button>
+                  <span className="text-xs text-gray-400">
+                    {page + 1} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={page >= totalPages - 1}
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-500 disabled:text-gray-200 disabled:cursor-not-allowed px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors disabled:hover:bg-transparent">
+                    ถัดไป ›
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       )}
