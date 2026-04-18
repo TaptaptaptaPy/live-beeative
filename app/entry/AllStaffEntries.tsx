@@ -11,9 +11,9 @@ type Entry = {
   id: string; date: string; platform: string; salesAmount: number;
   notes: string | null; createdAt: string;
   sessionName: string | null; customStart: string | null; customEnd: string | null;
+  userId: string; userName: string;
 };
 
-// แมปเวลา → ชื่อช่วง
 function getTimeLabel(sessionName: string | null, start: string | null, end: string | null): string {
   if (start === "09:00" && end === "16:00") return "☀️ เช้า";
   if (start === "16:00" && (end === "00:00" || end === "24:00")) return "🌙 เย็น";
@@ -22,21 +22,24 @@ function getTimeLabel(sessionName: string | null, start: string | null, end: str
   return "";
 }
 
-export default function MyRecentEntries() {
+export default function AllStaffEntries() {
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
   const [editNotes, setEditNotes] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  async function refresh() {
+    const data = await fetch("/api/staff-entries").then(r => r.json());
+    setEntries(data);
+  }
 
   useEffect(() => {
-    if (open) {
-      fetch("/api/my-entries").then(r => r.json()).then(setEntries).catch(() => {});
-    }
+    if (open) refresh();
   }, [open]);
 
   function startEdit(entry: Entry) {
@@ -44,20 +47,6 @@ export default function MyRecentEntries() {
     setEditAmount(String(entry.salesAmount));
     setEditNotes(entry.notes || "");
     setError("");
-  }
-
-  async function handleDelete(id: string) {
-    setDeletingId(id);
-    setError("");
-    const result = await deleteEntry(id);
-    if (result?.error) {
-      setError(result.error);
-    } else {
-      const updated = await fetch("/api/my-entries").then(r => r.json());
-      setEntries(updated);
-    }
-    setDeletingId(null);
-    setConfirmDeleteId(null);
   }
 
   async function submitEdit(id: string) {
@@ -68,19 +57,24 @@ export default function MyRecentEntries() {
     fd.append("notes", editNotes);
     const result = await updateEntry(fd);
     if (result?.error) setError(result.error);
-    else {
-      setEditingId(null);
-      const updated = await fetch("/api/my-entries").then(r => r.json());
-      setEntries(updated);
-    }
+    else { setEditingId(null); await refresh(); }
     setLoading(false);
+  }
+
+  async function handleDelete(id: string) {
+    setDeletingId(id); setError("");
+    const result = await deleteEntry(id);
+    if (result?.error) setError(result.error);
+    else await refresh();
+    setDeletingId(null);
+    setConfirmDeleteId(null);
   }
 
   return (
     <div className="mx-4 mt-3">
       <button onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between bg-white rounded-2xl px-4 py-3 shadow-sm text-sm font-semibold text-[#1A1A1A]">
-        <span>📋 รายการที่บันทึกไว้</span>
+        className="w-full flex items-center justify-between bg-white rounded-2xl px-4 py-3 shadow-sm text-sm font-semibold text-[#1A1A1A] border-l-4 border-orange-400">
+        <span>👥 รายการของพนักงาน (48 ชม. ล่าสุด)</span>
         <span className="text-gray-400">{open ? "▲" : "▼"}</span>
       </button>
 
@@ -100,9 +94,13 @@ export default function MyRecentEntries() {
                 <div key={entry.id} className="border border-gray-100 rounded-xl p-3">
                   {isEditing ? (
                     <div className="space-y-2">
-                      <div className="text-xs text-gray-500 mb-1">
-                        {entry.date} · {PLATFORM_LABELS[entry.platform]}
-                        {timeLabel && ` · ${timeLabel}`}
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-xs font-semibold text-orange-500">{entry.userName}</span>
+                        <span className="text-xs text-gray-400">·</span>
+                        <span className="text-xs text-gray-500">
+                          {entry.date} · {PLATFORM_LABELS[entry.platform]}
+                          {timeLabel && ` · ${timeLabel}`}
+                        </span>
                       </div>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">฿</span>
@@ -126,18 +124,17 @@ export default function MyRecentEntries() {
                     </div>
                   ) : confirmDeleteId === entry.id ? (
                     <div className="space-y-2">
-                      <div className="text-xs text-gray-500 mb-1">
-                        {entry.date} · {PLATFORM_LABELS[entry.platform]}
-                        {timeLabel && ` · ${timeLabel}`}
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-xs font-semibold text-orange-500">{entry.userName}</span>
+                        <span className="text-xs text-gray-400">·</span>
+                        <span className="text-xs text-gray-500">{entry.date}</span>
                       </div>
                       <div className="text-sm font-semibold text-red-600">
                         ยืนยันลบรายการ ฿{entry.salesAmount.toLocaleString("th-TH")} ?
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => setConfirmDeleteId(null)}
-                          className="flex-1 py-2 rounded-xl border-2 border-gray-200 text-gray-500 text-sm">
-                          ยกเลิก
-                        </button>
+                          className="flex-1 py-2 rounded-xl border-2 border-gray-200 text-gray-500 text-sm">ยกเลิก</button>
                         <button
                           onClick={() => handleDelete(entry.id)}
                           disabled={deletingId === entry.id}
@@ -149,8 +146,11 @@ export default function MyRecentEntries() {
                   ) : (
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-semibold text-[#1A1A1A]">
-                          ฿{entry.salesAmount.toLocaleString("th-TH")}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-semibold text-orange-500">{entry.userName}</span>
+                          <span className="text-sm font-bold text-[#1A1A1A]">
+                            ฿{entry.salesAmount.toLocaleString("th-TH")}
+                          </span>
                         </div>
                         <div className="text-xs text-gray-500">
                           {entry.date} · {PLATFORM_LABELS[entry.platform]}
@@ -159,11 +159,11 @@ export default function MyRecentEntries() {
                         {entry.notes && <div className="text-xs text-gray-400">📝 {entry.notes}</div>}
                       </div>
                       <div className="flex gap-1.5 ml-2 flex-shrink-0">
-                        <button onClick={() => startEdit(entry)}
+                        <button onClick={() => { startEdit(entry); setConfirmDeleteId(null); }}
                           className="text-xs px-2 py-1 rounded-lg bg-[#FFF8CC] text-[#1A1A1A] font-medium">
                           ✏️ แก้ไข
                         </button>
-                        <button onClick={() => { setConfirmDeleteId(entry.id); setError(""); }}
+                        <button onClick={() => { setConfirmDeleteId(entry.id); setError(""); setEditingId(null); }}
                           className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-500 font-medium">
                           🗑️
                         </button>

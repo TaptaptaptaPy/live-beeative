@@ -120,15 +120,21 @@ export async function updateEntry(formData: FormData) {
   const entry = await prisma.timeEntry.findUnique({ where: { id }, include: { user: true } });
   if (!entry) return { error: "ไม่พบรายการ" };
 
-  // พนักงาน: แก้ไขได้เฉพาะของตัวเอง
+  // พนักงาน: ตรวจสอบสิทธิ์
+  let isOwnerEmp = false;
   if (session.role === "EMPLOYEE") {
-    if (entry.userId !== session.userId) return { error: "ไม่มีสิทธิ์แก้ไขรายการของคนอื่น" };
+    const dbUser = await prisma.user.findUnique({ where: { id: session.userId }, select: { isOwnerEmployee: true } });
+    isOwnerEmp = dbUser?.isOwnerEmployee ?? false;
+    if (!isOwnerEmp && entry.userId !== session.userId) {
+      return { error: "ไม่มีสิทธิ์แก้ไขรายการของคนอื่น" };
+    }
   }
 
   const oldAmount = entry.salesAmount;
 
   const updateData: Record<string, unknown> = { salesAmount, notes };
-  if (session.role === "OWNER") {
+  // OWNER หรือ owner-employee สามารถเปลี่ยน platform และวันที่ได้
+  if (session.role === "OWNER" || isOwnerEmp) {
     if (platform) updateData.platform = platform;
     if (date) updateData.date = date;
   }
@@ -158,16 +164,30 @@ export async function updateEntry(formData: FormData) {
 
 export async function deleteEntry(id: string) {
   const session = await getSession();
-  if (!session || session.role !== "OWNER") return { error: "ไม่มีสิทธิ์" };
+  if (!session) return { error: "ไม่มีสิทธิ์" };
+
   const entry = await prisma.timeEntry.findUnique({ where: { id }, include: { user: true } });
+  if (!entry) return { error: "ไม่พบรายการ" };
+
+  // OWNER can delete anything; EMPLOYEE can delete own; isOwnerEmployee can delete anyone's
+  if (session.role === "EMPLOYEE") {
+    if (entry.userId !== session.userId) {
+      const dbUser = await prisma.user.findUnique({ where: { id: session.userId }, select: { isOwnerEmployee: true } });
+      if (!dbUser?.isOwnerEmployee) return { error: "ไม่มีสิทธิ์ลบรายการของผู้อื่น" };
+    }
+  } else if (session.role !== "OWNER") {
+    return { error: "ไม่มีสิทธิ์" };
+  }
+
   await prisma.timeEntry.delete({ where: { id } });
   await logActivity({
     userId: session.userId,
     userName: session.name,
-    userRole: "OWNER",
+    userRole: session.role,
     action: "ENTRY_DELETE",
     details: JSON.stringify({ entryId: id, employeeName: entry?.user?.name, amount: entry?.salesAmount }),
   });
+  revalidatePath("/entry");
   revalidatePath("/owner/entries");
   revalidatePath("/owner/reports");
   return { success: true };
