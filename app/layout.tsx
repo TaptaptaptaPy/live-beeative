@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sarabun } from "next/font/google";
 import "./globals.css";
+import { Providers } from "./providers";
 
 const sarabun = Sarabun({
   variable: "--font-sarabun",
@@ -27,9 +28,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="th" className={`${sarabun.variable} h-full`}>
-      <body className="min-h-full flex flex-col bg-gray-50 font-sans antialiased">
-        {children}
+    <html lang="th" className={`${sarabun.variable} h-full`} suppressHydrationWarning>
+      <body className="min-h-full flex flex-col font-sans antialiased">
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

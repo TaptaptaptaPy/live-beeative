@@ -2,8 +2,8 @@
 // APP VERSION — อัปเดตทุกครั้งที่มีการแก้ไข
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const APP_VERSION = "1.13.0";
-export const APP_VERSION_DATE = "2026-04-17";
+export const APP_VERSION = "1.14.3";
+export const APP_VERSION_DATE = "2026-04-19";
 
 export type VersionEntry = {
   version: string;
@@ -14,6 +14,58 @@ export type VersionEntry = {
 };
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "1.14.3",
+    date: "2026-04-19",
+    type: "minor",
+    title: "Pack C Phase 4 — Sidebar + Skeletons",
+    changes: [
+      "Desktop sidebar navigation (md+) แทน bottom nav — แบ่งเป็น 3 กลุ่ม: Primary / จัดการ / การเงิน",
+      "Mobile ยังคงใช้ bottom nav เดิม (ไม่เปลี่ยน)",
+      "Loading skeleton สำหรับ Dashboard และ Entries — ระหว่างรอโหลด server data",
+      "Layout 2-column grid บน desktop สำหรับ Dashboard และ Entries",
+    ],
+  },
+  {
+    version: "1.14.2",
+    date: "2026-04-19",
+    type: "minor",
+    title: "Pack C Phase 3 — Entry & List Pages",
+    changes: [
+      "Platform badge สีตาม brand จริง (TikTok แดง / Shopee ส้ม / Facebook น้ำเงิน) ทุกหน้า",
+      "MyRecentEntries: group header แสดงยอดรวมรายวัน, skeleton loader, dark mode ครบ",
+      "Owner Entries: entry card มี left-border สีตาม platform, dark mode ทุกส่วน",
+      "EmptyState แยกกรณี 'ยังไม่มีรายการ' vs 'กรองแล้วไม่เจอ' + ปุ่มล้าง filter",
+      "Entry form: platform selector ใช้สี brand จริง, success screen แสดง commission",
+    ],
+  },
+  {
+    version: "1.14.1",
+    date: "2026-04-19",
+    type: "minor",
+    title: "Pack C Phase 2 — Dashboard Revamp",
+    changes: [
+      "Dashboard 2-column responsive บน desktop (md+)",
+      "Target progress bar — ดึงเป้าทีมเดือนนี้มาแสดง MTD vs เป้า",
+      "DashboardCharts dark mode สมบูรณ์ — custom tooltip, สีตาม platform brand",
+      "Platform donut chart เป็นแบบ inner radius + legend + mini progress bar",
+      "Platform breakdown แต่ละ entry มี progress bar สีตาม brand (TikTok/Shopee/Facebook)",
+    ],
+  },
+  {
+    version: "1.14.0",
+    date: "2026-04-18",
+    type: "minor",
+    title: "Pack C Phase 1 — Design System + Dark Mode",
+    changes: [
+      "Dark mode toggle 🌙/☀️ ในหน้า Owner — กดสลับได้ทันที",
+      "Design tokens ครบชุด: semantic colors (success/warning/danger/info), platform colors (TikTok/Shopee/Facebook)",
+      "UI primitives ใหม่: StatCard (พร้อม sparkline), Badge, EmptyState, Skeleton",
+      "Dashboard cards อัปเดตเป็น StatCard พร้อม sparkline 7 วัน",
+      "Gradient progress bar ทีม 1 = gold, 2 = silver, 3 = bronze",
+      "Scroll bar เล็กลง, focus ring เป็น bee-yellow",
+    ],
+  },
   {
     version: "1.13.0",
     date: "2026-04-18",

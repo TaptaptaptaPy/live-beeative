@@ -1,65 +1,122 @@
 @import "tailwindcss";
 
+/* ─── Dark mode: class-based (next-themes adds class="dark" to <html>) ─── */
+@variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --font-sans: var(--font-sarabun);
 
-  /* Beeative Brand Colors */
-  --color-bee-yellow: #F5D400;
+  /* ── Beeative Brand ── */
+  --color-bee-yellow:       #F5D400;
   --color-bee-yellow-light: #FFF8CC;
-  --color-bee-black: #1A1A1A;
-  --color-bee-peach: #F5A882;
-  --color-bee-peach-light: #FDE8DC;
-  --color-bee-cream: #FFFBEB;
+  --color-bee-black:        #1A1A1A;
+  --color-bee-peach:        #F5A882;
+  --color-bee-peach-light:  #FDE8DC;
+  --color-bee-cream:        #FFFBEB;
+
+  /* ── Semantic (light defaults) ── */
+  --color-success:          #16a34a;
+  --color-success-bg:       #f0fdf4;
+  --color-success-text:     #15803d;
+  --color-warning:          #d97706;
+  --color-warning-bg:       #fffbeb;
+  --color-warning-text:     #b45309;
+  --color-danger:           #dc2626;
+  --color-danger-bg:        #fef2f2;
+  --color-danger-text:      #b91c1c;
+  --color-info:             #2563eb;
+  --color-info-bg:          #eff6ff;
+  --color-info-text:        #1d4ed8;
+
+  /* ── Platform brand colors ── */
+  --color-tiktok:           #010101;
+  --color-tiktok-accent:    #FF004F;
+  --color-shopee:           #EE4D2D;
+  --color-facebook:         #1877F2;
+  --color-lazada:           #0F146D;
+  --color-lazada-accent:    #FF6600;
+
+  /* ── Surface scale (light) ── */
+  --color-surface-base:     #FFFBEB;
+  --color-surface-1:        #FFFFFF;
+  --color-surface-2:        #F9F6EE;
+  --color-surface-3:        #F0EBD8;
+  --color-text-primary:     #1A1A1A;
+  --color-text-secondary:   #6B7280;
+  --color-text-muted:       #9CA3AF;
+  --color-border:           #E5E7EB;
+  --color-border-strong:    #D1D5DB;
 }
 
+/* ── Light mode body ── */
 body {
-  background: #FFFBEB;
-  color: #1A1A1A;
+  background: var(--color-surface-base, #FFFBEB);
+  color: var(--color-text-primary, #1A1A1A);
 }
 
-/* Smooth tap highlight for mobile */
+/* ── Dark mode: override surface tokens ── */
+.dark body,
+.dark {
+  --color-surface-base:   #0F0F0F;
+  --color-surface-1:      #1A1A1A;
+  --color-surface-2:      #242424;
+  --color-surface-3:      #2E2E2E;
+  --color-text-primary:   #F5F5F5;
+  --color-text-secondary: #A1A1AA;
+  --color-text-muted:     #71717A;
+  --color-border:         #2A2A2A;
+  --color-border-strong:  #3F3F46;
+
+  /* Semantic dark adjustments */
+  --color-success:        #22c55e;
+  --color-success-bg:     #052e16;
+  --color-success-text:   #4ade80;
+  --color-warning:        #f59e0b;
+  --color-warning-bg:     #1c1400;
+  --color-warning-text:   #fbbf24;
+  --color-danger:         #ef4444;
+  --color-danger-bg:      #1f0000;
+  --color-danger-text:    #f87171;
+  --color-info:           #3b82f6;
+  --color-info-bg:        #00111f;
+  --color-info-text:      #60a5fa;
+}
+
+/* ── Smooth tap highlight for mobile ── */
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Global interactive feedback — every button/link feels tappable */
+/* ── Global interactive feedback ── */
 button {
   cursor: pointer;
   transition: transform 0.1s ease, filter 0.12s ease, opacity 0.12s ease;
 }
-button:not(:disabled):hover {
-  filter: brightness(0.93);
-}
-button:not(:disabled):active {
-  transform: scale(0.96);
-  filter: brightness(0.87);
-}
-button:disabled {
-  cursor: not-allowed;
-}
+button:not(:disabled):hover  { filter: brightness(0.93); }
+button:not(:disabled):active { transform: scale(0.96); filter: brightness(0.87); }
+button:disabled               { cursor: not-allowed; }
+
 a {
   transition: filter 0.12s ease, opacity 0.12s ease;
 }
-a:hover {
-  filter: brightness(0.9);
-}
-a:active {
-  filter: brightness(0.8);
-}
+a:hover  { filter: brightness(0.9); }
+a:active { filter: brightness(0.8); }
 
-/* Bee-inspired gradient */
-.bee-gradient {
+/* ── Brand gradients ── */
+.bee-gradient      { background: linear-gradient(135deg, #F5D400 0%, #F5A882 100%); }
+.bee-gradient-dark { background: linear-gradient(135deg, #1A1A1A 0%, #3D3D3D 100%); }
+.bee-gradient-text {
   background: linear-gradient(135deg, #F5D400 0%, #F5A882 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.bee-gradient-dark {
-  background: linear-gradient(135deg, #1A1A1A 0%, #3D3D3D 100%);
-}
-
+/* ── Animations ── */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-5px); }
-  40%, 80% { transform: translateX(5px); }
+  20%, 60%  { transform: translateX(-5px); }
+  40%, 80%  { transform: translateX(5px); }
 }
 .animate-shake { animation: shake 0.35s ease; }
 
@@ -75,3 +132,35 @@ a:active {
   100% { transform: scale(1); }
 }
 .animate-pop { animation: pop 0.2s ease; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in { animation: fade-in 0.25s ease; }
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.12) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+.dark .animate-shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.06) 50%, transparent 75%);
+  background-size: 200% 100%;
+}
+
+/* ── Scrollbar: thin + themed ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 9999px; }
+.dark ::-webkit-scrollbar-thumb { background: #3F3F46; }
+
+/* ── Focus ring ── */
+:focus-visible {
+  outline: 2px solid #F5D400;
+  outline-offset: 2px;
+}

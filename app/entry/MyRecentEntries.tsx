@@ -7,6 +7,13 @@ const PLATFORM_LABELS: Record<string, string> = {
   TIKTOK: "TikTok", SHOPEE: "Shopee", FACEBOOK: "Facebook", OTHER: "อื่นๆ",
 };
 
+const PLATFORM_META: Record<string, { emoji: string; color: string; bg: string }> = {
+  TIKTOK:   { emoji: "🎵", color: "#FF004F", bg: "#FF004F15" },
+  SHOPEE:   { emoji: "🛒", color: "#EE4D2D", bg: "#EE4D2D15" },
+  FACEBOOK: { emoji: "📘", color: "#1877F2", bg: "#1877F215" },
+  OTHER:    { emoji: "📱", color: "#6B7280", bg: "#6B728015" },
+};
+
 type Entry = {
   id: string; date: string; platform: string; salesAmount: number;
   notes: string | null; createdAt: string;
@@ -28,25 +35,19 @@ function getTimeLabel(sessionName: string | null, start: string | null, end: str
   return "⏰ กำหนดเอง";
 }
 
-function fmtDateTime(iso: string): { date: string; time: string; shortDate: string } {
+function fmtDateTime(iso: string) {
   const d = new Date(iso);
-  const date = d.toLocaleDateString("th-TH", {
-    day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Bangkok",
-  });
-  const shortDate = d.toLocaleDateString("th-TH", {
-    day: "numeric", month: "short", timeZone: "Asia/Bangkok",
-  });
-  const time = d.toLocaleTimeString("th-TH", {
-    hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok",
-  });
-  return { date, time, shortDate };
+  return {
+    date:      d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Bangkok" }),
+    shortDate: d.toLocaleDateString("th-TH", { day: "numeric", month: "short", timeZone: "Asia/Bangkok" }),
+    time:      d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }),
+  };
 }
 
 function fmtSaleDate(dateStr: string): string {
-  // dateStr = "YYYY-MM-DD"
   const [y, m, d] = dateStr.split("-");
-  const dt = new Date(Number(y), Number(m) - 1, Number(d));
-  return dt.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(Number(y), Number(m) - 1, Number(d))
+    .toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function groupByKey<T>(arr: T[], keyFn: (item: T) => string): [string, T[]][] {
@@ -59,19 +60,31 @@ function groupByKey<T>(arr: T[], keyFn: (item: T) => string): [string, T[]][] {
   return [...map.entries()];
 }
 
+function fmtBaht(n: number): string {
+  return "฿" + n.toLocaleString("th-TH", { maximumFractionDigits: 0 });
+}
+
+// ─── platform pill ────────────────────────────────────────────────────────────
+
+function PlatformPill({ platform }: { platform: string }) {
+  const meta = PLATFORM_META[platform] ?? PLATFORM_META.OTHER;
+  return (
+    <span
+      className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none"
+      style={{ background: meta.bg, color: meta.color }}
+    >
+      {meta.emoji} {PLATFORM_LABELS[platform] ?? platform}
+    </span>
+  );
+}
+
 // ─── inline edit form ─────────────────────────────────────────────────────────
 
-function EditForm({
-  entry, onCancel, onSaved,
-}: {
-  entry: Entry;
-  onCancel: () => void;
-  onSaved: () => void;
-}) {
+function EditForm({ entry, onCancel, onSaved }: { entry: Entry; onCancel: () => void; onSaved: () => void }) {
   const [amount, setAmount] = useState(String(entry.salesAmount));
-  const [notes, setNotes] = useState(entry.notes || "");
+  const [notes, setNotes]   = useState(entry.notes || "");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError]   = useState("");
 
   async function submit() {
     setLoading(true); setError("");
@@ -86,20 +99,19 @@ function EditForm({
   }
 
   return (
-    <div className="space-y-2 mt-2">
+    <div className="space-y-2 mt-2 animate-slide-up">
       <div className="relative">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">฿</span>
-        <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
-          min="0" step="0.01"
-          className="w-full border-2 border-[#F5D400] rounded-xl pl-7 pr-4 py-2 text-lg font-bold focus:outline-none" />
+        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} min="0" step="0.01"
+          className="w-full border-2 border-[#F5D400] rounded-xl pl-7 pr-4 py-2 text-lg font-bold focus:outline-none bg-white dark:bg-[#1A1A1A] dark:text-white" />
       </div>
       <input value={notes} onChange={e => setNotes(e.target.value)}
         placeholder="หมายเหตุ (ถ้ามี)"
-        className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]" />
+        className="w-full border-2 border-gray-200 dark:border-[#2A2A2A] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400] bg-white dark:bg-[#1A1A1A] dark:text-white" />
       {error && <div className="text-red-500 text-xs">{error}</div>}
       <div className="flex gap-2">
         <button onClick={onCancel}
-          className="flex-1 py-2 rounded-xl border-2 border-gray-200 text-gray-500 text-sm">ยกเลิก</button>
+          className="flex-1 py-2 rounded-xl border-2 border-gray-200 dark:border-[#2A2A2A] text-gray-500 text-sm">ยกเลิก</button>
         <button onClick={submit} disabled={loading}
           className="flex-1 py-2 rounded-xl text-sm font-semibold text-[#1A1A1A] disabled:opacity-40"
           style={{ background: "linear-gradient(135deg, #F5D400, #F5A882)" }}>
@@ -110,141 +122,148 @@ function EditForm({
   );
 }
 
-// ─── single entry row ─────────────────────────────────────────────────────────
+// ─── confirm delete ───────────────────────────────────────────────────────────
 
-function EntryRow({
-  entry, sortMode, showOwner, onRefresh,
-}: {
-  entry: Entry;
-  sortMode: SortMode;
-  showOwner: boolean;   // แสดงชื่อพนักงาน (scope=all)
-  onRefresh: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState("");
-
-  const { date: createdDate, time: createdTime, shortDate: createdShort } = fmtDateTime(entry.createdAt);
-  const timeLabel = getTimeLabel(entry.sessionName, entry.customStart, entry.customEnd);
-  const isByProxy = entry.createdByUserId && entry.createdByUserId !== entry.userId;
+function ConfirmDelete({ entry, onCancel, onDeleted }: { entry: Entry; onCancel: () => void; onDeleted: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError]   = useState("");
 
   async function handleDelete() {
-    setDeleting(true); setError("");
+    setLoading(true); setError("");
     const res = await deleteEntry(entry.id);
-    if (res?.error) { setError(res.error); setDeleting(false); setConfirming(false); }
-    else onRefresh();
+    if (res?.error) { setError(res.error); setLoading(false); }
+    else onDeleted();
   }
 
-  if (editing) {
-    return (
-      <div className="rounded-xl border border-[#F5D400] bg-[#FFFBEB] p-3">
-        <div className="text-xs text-gray-500 mb-1">
-          {fmtSaleDate(entry.date)} · {PLATFORM_LABELS[entry.platform]} · {timeLabel}
-          {showOwner && <span className="ml-1 text-orange-500 font-medium">· {entry.userName}</span>}
-        </div>
-        <EditForm entry={entry} onCancel={() => setEditing(false)} onSaved={() => { setEditing(false); onRefresh(); }} />
-      </div>
-    );
-  }
-
-  if (confirming) {
-    return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-3 space-y-2">
-        <div className="text-sm font-semibold text-red-600">
-          ลบรายการ ฿{entry.salesAmount.toLocaleString("th-TH")} ของ {entry.userName}?
-        </div>
-        {error && <div className="text-red-500 text-xs">{error}</div>}
-        <div className="flex gap-2">
-          <button onClick={() => setConfirming(false)}
-            className="flex-1 py-1.5 rounded-xl border-2 border-gray-200 text-gray-500 text-sm">ยกเลิก</button>
-          <button onClick={handleDelete} disabled={deleting}
-            className="flex-1 py-1.5 rounded-xl text-sm font-semibold text-white bg-red-500 disabled:opacity-40">
-            {deleting ? "กำลังลบ..." : "🗑️ ยืนยันลบ"}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Log mode row ──
-  if (sortMode === "log") {
-    return (
-      <div className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
-        {/* timestamp dot */}
-        <div className="flex-shrink-0 w-14 text-right">
-          <span className="text-[11px] text-gray-400 font-mono leading-tight">{createdTime}</span>
-        </div>
-        {/* content */}
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-[#1A1A1A]">
-            ฿{entry.salesAmount.toLocaleString("th-TH")}
-            <span className="ml-2 font-normal text-xs text-gray-500">
-              {PLATFORM_LABELS[entry.platform]} · {timeLabel}
-            </span>
-          </div>
-          <div className="text-xs text-gray-400 mt-0.5">
-            ยอดวัน {fmtSaleDate(entry.date)}
-            {showOwner && (
-              <span className="ml-1 text-orange-500 font-medium">· {entry.userName}</span>
-            )}
-            {isByProxy && (
-              <span className="ml-1 text-purple-500">· บันทึกแทนโดย {entry.createdByName}</span>
-            )}
-          </div>
-          {entry.notes && <div className="text-xs text-gray-400 mt-0.5">📝 {entry.notes}</div>}
-        </div>
-        {/* actions */}
-        <div className="flex gap-1 flex-shrink-0">
-          <button onClick={() => setEditing(true)}
-            className="text-[11px] px-2 py-1 rounded-lg bg-[#FFF8CC] text-[#1A1A1A] font-medium">✏️</button>
-          <button onClick={() => setConfirming(true)}
-            className="text-[11px] px-2 py-1 rounded-lg bg-red-50 text-red-500 font-medium">🗑️</button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Date mode row ──
   return (
-    <div className="flex items-center gap-2 py-2 border-b border-gray-50 last:border-0">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-sm font-semibold text-[#1A1A1A]">฿{entry.salesAmount.toLocaleString("th-TH")}</span>
-          <span className="text-xs text-gray-500">{PLATFORM_LABELS[entry.platform]}</span>
-          <span className="text-xs text-gray-400">{timeLabel}</span>
-          {showOwner && <span className="text-xs text-orange-500 font-medium">{entry.userName}</span>}
-          {isByProxy && <span className="text-[10px] text-purple-400">บันทึกโดย {entry.createdByName}</span>}
-        </div>
-        {entry.notes && <div className="text-xs text-gray-400">📝 {entry.notes}</div>}
+    <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 p-3 space-y-2 animate-slide-up">
+      <div className="text-sm font-semibold text-red-600 dark:text-red-400">
+        ลบ {fmtBaht(entry.salesAmount)} · {entry.userName}?
       </div>
-      {/* บันทึกเมื่อ */}
-      <div className="text-[10px] text-gray-300 text-right flex-shrink-0 leading-tight">
-        <div>{createdShort}</div>
-        <div>{createdTime}</div>
-      </div>
-      {/* actions */}
-      <div className="flex gap-1 flex-shrink-0">
-        <button onClick={() => setEditing(true)}
-          className="text-[11px] px-2 py-1 rounded-lg bg-[#FFF8CC] text-[#1A1A1A] font-medium">✏️</button>
-        <button onClick={() => setConfirming(true)}
-          className="text-[11px] px-2 py-1 rounded-lg bg-red-50 text-red-500 font-medium">🗑️</button>
+      {error && <div className="text-red-500 text-xs">{error}</div>}
+      <div className="flex gap-2">
+        <button onClick={onCancel}
+          className="flex-1 py-1.5 rounded-xl border-2 border-gray-200 dark:border-[#2A2A2A] text-gray-500 text-sm">ยกเลิก</button>
+        <button onClick={handleDelete} disabled={loading}
+          className="flex-1 py-1.5 rounded-xl text-sm font-semibold text-white bg-red-500 disabled:opacity-40">
+          {loading ? "กำลังลบ..." : "🗑️ ยืนยันลบ"}
+        </button>
       </div>
     </div>
   );
 }
 
-// ─── main component ───────────────────────────────────────────────────────────
+// ─── single entry row ─────────────────────────────────────────────────────────
+
+function EntryRow({ entry, sortMode, showOwner, onRefresh }: {
+  entry: Entry; sortMode: SortMode; showOwner: boolean; onRefresh: () => void;
+}) {
+  const [mode, setMode] = useState<"view" | "edit" | "confirm">("view");
+  const { time: createdTime, shortDate: createdShort } = fmtDateTime(entry.createdAt);
+  const timeLabel = getTimeLabel(entry.sessionName, entry.customStart, entry.customEnd);
+  const isByProxy = entry.createdByUserId && entry.createdByUserId !== entry.userId;
+
+  if (mode === "edit") {
+    return (
+      <div className="rounded-xl border border-[#F5D400] bg-[#FFFBEB] dark:bg-[#1C1800] p-3">
+        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+          {fmtSaleDate(entry.date)} · {timeLabel}
+          {showOwner && <span className="ml-1 text-orange-500 font-medium">· {entry.userName}</span>}
+        </div>
+        <EditForm entry={entry} onCancel={() => setMode("view")} onSaved={() => { setMode("view"); onRefresh(); }} />
+      </div>
+    );
+  }
+
+  if (mode === "confirm") {
+    return <ConfirmDelete entry={entry} onCancel={() => setMode("view")} onDeleted={onRefresh} />;
+  }
+
+  const actions = (
+    <div className="flex gap-1 flex-shrink-0">
+      <button onClick={() => setMode("edit")}
+        className="text-[11px] px-2 py-1 rounded-lg bg-[#FFF8CC] dark:bg-[#2A2200] text-[#1A1A1A] dark:text-[#F5D400] font-medium">✏️</button>
+      <button onClick={() => setMode("confirm")}
+        className="text-[11px] px-2 py-1 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-500 font-medium">🗑️</button>
+    </div>
+  );
+
+  if (sortMode === "log") {
+    return (
+      <div className="flex items-start gap-2.5 py-2.5 border-b border-gray-100 dark:border-[#222] last:border-0">
+        {/* timestamp */}
+        <div className="flex-shrink-0 w-11 text-right pt-0.5">
+          <span className="text-[11px] text-gray-400 dark:text-gray-500 font-mono">{createdTime}</span>
+        </div>
+        {/* body */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-sm font-bold text-gray-900 dark:text-white">{fmtBaht(entry.salesAmount)}</span>
+            <PlatformPill platform={entry.platform} />
+            <span className="text-[11px] text-gray-400 dark:text-gray-500">{timeLabel}</span>
+          </div>
+          <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 flex flex-wrap gap-x-1.5">
+            <span>ยอดวัน {fmtSaleDate(entry.date)}</span>
+            {showOwner && <span className="text-orange-500 font-medium">{entry.userName}</span>}
+            {isByProxy && <span className="text-purple-400">บันทึกแทนโดย {entry.createdByName}</span>}
+          </div>
+          {entry.notes && <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">📝 {entry.notes}</div>}
+        </div>
+        {actions}
+      </div>
+    );
+  }
+
+  // date mode
+  return (
+    <div className="flex items-center gap-2 py-2 border-b border-gray-100 dark:border-[#222] last:border-0">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-sm font-bold text-gray-900 dark:text-white">{fmtBaht(entry.salesAmount)}</span>
+          <PlatformPill platform={entry.platform} />
+          <span className="text-[11px] text-gray-400 dark:text-gray-500">{timeLabel}</span>
+          {showOwner && <span className="text-[11px] text-orange-500 font-medium">{entry.userName}</span>}
+          {isByProxy && <span className="text-[10px] text-purple-400">บันทึกโดย {entry.createdByName}</span>}
+        </div>
+        {entry.notes && <div className="text-[11px] text-gray-400 dark:text-gray-500">📝 {entry.notes}</div>}
+      </div>
+      <div className="text-[10px] text-gray-300 dark:text-gray-600 text-right flex-shrink-0 leading-tight">
+        <div>{createdShort}</div>
+        <div>{createdTime}</div>
+      </div>
+      {actions}
+    </div>
+  );
+}
+
+// ─── skeleton loader ──────────────────────────────────────────────────────────
+
+function RowSkeleton() {
+  return (
+    <div className="py-2.5 border-b border-gray-100 dark:border-[#222] last:border-0 flex gap-2.5 items-start">
+      <div className="w-11 h-3 bg-gray-100 dark:bg-[#2A2A2A] rounded-full animate-pulse mt-1 flex-shrink-0" />
+      <div className="flex-1 space-y-1.5">
+        <div className="flex gap-2">
+          <div className="h-4 w-16 bg-gray-100 dark:bg-[#2A2A2A] rounded-full animate-pulse" />
+          <div className="h-4 w-12 bg-gray-100 dark:bg-[#2A2A2A] rounded-full animate-pulse" />
+        </div>
+        <div className="h-3 w-28 bg-gray-100 dark:bg-[#2A2A2A] rounded-full animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+// ─── main ─────────────────────────────────────────────────────────────────────
 
 const DAYS_PER_PAGE = 2;
 
 export default function MyRecentEntries({ isOwnerEmployee = false }: { isOwnerEmployee?: boolean }) {
-  const [open, setOpen] = useState(false);
-  const [sort, setSort] = useState<SortMode>("log");
+  const [open, setOpen]   = useState(false);
+  const [sort, setSort]   = useState<SortMode>("log");
   const [scope, setScope] = useState<ScopeMode>("mine");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(0);
+  const [page, setPage]   = useState(0);
 
   const refresh = useCallback(async (s: SortMode, sc: ScopeMode) => {
     setLoading(true);
@@ -253,67 +272,60 @@ export default function MyRecentEntries({ isOwnerEmployee = false }: { isOwnerEm
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    if (open) refresh(sort, scope);
-  }, [open, sort, scope, refresh]);
-
-  // reset page when filter changes
+  useEffect(() => { if (open) refresh(sort, scope); }, [open, sort, scope, refresh]);
   useEffect(() => { setPage(0); }, [sort, scope]);
 
-  // ── group entries ──
-  const grouped: [string, Entry[]][] =
-    sort === "log"
-      ? groupByKey(entries, e =>
-          new Date(e.createdAt).toLocaleDateString("th-TH", {
-            day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Bangkok",
-          })
-        )
-      : groupByKey(entries, e => e.date);
+  // group
+  const grouped: [string, Entry[]][] = sort === "log"
+    ? groupByKey(entries, e =>
+        new Date(e.createdAt).toLocaleDateString("th-TH", {
+          day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Bangkok",
+        })
+      )
+    : groupByKey(entries, e => e.date);
 
-  const totalPages = Math.ceil(grouped.length / DAYS_PER_PAGE);
+  const totalPages  = Math.ceil(grouped.length / DAYS_PER_PAGE);
   const pagedGroups = grouped.slice(page * DAYS_PER_PAGE, (page + 1) * DAYS_PER_PAGE);
-  const showOwner = scope === "all" && isOwnerEmployee;
+  const showOwner   = scope === "all" && isOwnerEmployee;
 
   return (
     <div className="mx-4 mt-3">
-      {/* Header button */}
-      <button onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between bg-white rounded-2xl px-4 py-3 shadow-sm text-sm font-semibold text-[#1A1A1A]">
+      {/* Accordion header */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between bg-white dark:bg-[#1A1A1A] rounded-2xl px-4 py-3 shadow-sm dark:shadow-none border border-transparent dark:border-[#2A2A2A] text-sm font-semibold text-gray-800 dark:text-white transition-all"
+      >
         <span>📋 รายการที่บันทึกไว้</span>
-        <span className="text-gray-400">{open ? "▲" : "▼"}</span>
+        <span className="text-gray-400 dark:text-gray-500">{open ? "▲" : "▼"}</span>
       </button>
 
       {open && (
-        <div className="bg-white rounded-b-2xl shadow-sm -mt-2 pt-3 pb-4 px-4">
-          {/* Controls row */}
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-b-2xl shadow-sm dark:shadow-none border-x border-b border-gray-100 dark:border-[#2A2A2A] -mt-2 pt-3 pb-4 px-4 animate-fade-in">
+
+          {/* Controls */}
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             {/* Sort toggle */}
-            <div className="flex bg-gray-100 rounded-xl p-0.5 gap-0.5">
-              {([
-                { v: "log",  label: "🕐 Log (วันที่บันทึก)" },
-                { v: "date", label: "📅 Sale Date (วันที่ยอด)" },
-              ] as { v: SortMode; label: string }[]).map(t => (
-                <button key={t.v}
-                  onClick={() => setSort(t.v)}
+            <div className="flex bg-gray-100 dark:bg-[#242424] rounded-xl p-0.5 gap-0.5">
+              {([ { v: "log", label: "🕐 Log" }, { v: "date", label: "📅 Sale Date" } ] as { v: SortMode; label: string }[]).map(t => (
+                <button key={t.v} onClick={() => setSort(t.v)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                    sort === t.v ? "bg-white shadow-sm text-[#1A1A1A]" : "text-gray-400"
+                    sort === t.v
+                      ? "bg-white dark:bg-[#1A1A1A] shadow-sm text-gray-900 dark:text-white"
+                      : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                   }`}>
                   {t.label}
                 </button>
               ))}
             </div>
-
-            {/* Scope toggle (owner-employee only) */}
+            {/* Scope toggle */}
             {isOwnerEmployee && (
-              <div className="flex bg-gray-100 rounded-xl p-0.5 gap-0.5">
-                {([
-                  { v: "mine", label: "ของฉัน" },
-                  { v: "all",  label: "👥 ทั้งหมด" },
-                ] as { v: ScopeMode; label: string }[]).map(t => (
-                  <button key={t.v}
-                    onClick={() => setScope(t.v)}
+              <div className="flex bg-gray-100 dark:bg-[#242424] rounded-xl p-0.5 gap-0.5">
+                {([ { v: "mine", label: "ของฉัน" }, { v: "all", label: "👥 ทั้งหมด" } ] as { v: ScopeMode; label: string }[]).map(t => (
+                  <button key={t.v} onClick={() => setScope(t.v)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                      scope === t.v ? "bg-white shadow-sm text-[#1A1A1A]" : "text-gray-400"
+                      scope === t.v
+                        ? "bg-white dark:bg-[#1A1A1A] shadow-sm text-gray-900 dark:text-white"
+                        : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                     }`}>
                     {t.label}
                   </button>
@@ -324,53 +336,61 @@ export default function MyRecentEntries({ isOwnerEmployee = false }: { isOwnerEm
 
           {/* Content */}
           {loading ? (
-            <div className="text-center py-6 text-gray-400 text-sm">กำลังโหลด...</div>
+            <div className="space-y-0">
+              {[...Array(4)].map((_, i) => <RowSkeleton key={i} />)}
+            </div>
           ) : entries.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">ยังไม่มีรายการ</p>
+            <div className="py-8 text-center">
+              <div className="text-3xl mb-2">📭</div>
+              <p className="text-sm text-gray-400 dark:text-gray-500">ยังไม่มีรายการ</p>
+            </div>
           ) : (
             <>
               <div className="space-y-4">
-                {pagedGroups.map(([groupKey, groupEntries]) => (
-                  <div key={groupKey}>
-                    {/* Group header */}
-                    <div className="text-xs font-semibold text-gray-400 mb-1.5 flex items-center gap-2">
-                      <span className="bg-gray-100 px-2 py-0.5 rounded-full">
-                        {sort === "log" ? groupKey : fmtSaleDate(groupKey)}
-                      </span>
-                      <span className="text-gray-300">{groupEntries.length} รายการ</span>
+                {pagedGroups.map(([groupKey, groupEntries]) => {
+                  const dayTotal = groupEntries.reduce((s, e) => s + e.salesAmount, 0);
+                  return (
+                    <div key={groupKey}>
+                      {/* Group header */}
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-[#242424] px-2 py-0.5 rounded-full">
+                          {sort === "log" ? groupKey : fmtSaleDate(groupKey)} · {groupEntries.length} รายการ
+                        </span>
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                          {fmtBaht(dayTotal)}
+                        </span>
+                      </div>
+                      {/* Rows */}
+                      <div className="bg-gray-50 dark:bg-[#141414] rounded-xl px-3">
+                        {groupEntries.map(entry => (
+                          <EntryRow
+                            key={entry.id}
+                            entry={entry}
+                            sortMode={sort}
+                            showOwner={showOwner}
+                            onRefresh={() => refresh(sort, scope)}
+                          />
+                        ))}
+                      </div>
                     </div>
-                    {/* Entries */}
-                    <div className="bg-gray-50 rounded-xl px-3">
-                      {groupEntries.map(entry => (
-                        <EntryRow
-                          key={entry.id}
-                          entry={entry}
-                          sortMode={sort}
-                          showOwner={showOwner}
-                          onRefresh={() => refresh(sort, scope)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-[#2A2A2A]">
                   <button
                     onClick={() => setPage(p => Math.max(0, p - 1))}
                     disabled={page === 0}
-                    className="flex items-center gap-1 text-xs font-semibold text-gray-500 disabled:text-gray-200 disabled:cursor-not-allowed px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors disabled:hover:bg-transparent">
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400 disabled:text-gray-200 dark:disabled:text-gray-700 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#242424] transition-colors disabled:hover:bg-transparent">
                     ‹ ก่อนหน้า
                   </button>
-                  <span className="text-xs text-gray-400">
-                    {page + 1} / {totalPages}
-                  </span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{page + 1} / {totalPages}</span>
                   <button
                     onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                     disabled={page >= totalPages - 1}
-                    className="flex items-center gap-1 text-xs font-semibold text-gray-500 disabled:text-gray-200 disabled:cursor-not-allowed px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors disabled:hover:bg-transparent">
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400 disabled:text-gray-200 dark:disabled:text-gray-700 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#242424] transition-colors disabled:hover:bg-transparent">
                     ถัดไป ›
                   </button>
                 </div>
