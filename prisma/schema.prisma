@@ -23,7 +23,8 @@ model User {
   showLeave         Boolean            @default(false)
   showSalary        Boolean            @default(false)
   isOwnerEmployee   Boolean            @default(false)  // true = พนักงานที่เป็นเจ้าของร้านด้วย
-  entries           TimeEntry[]
+  entries           TimeEntry[]        @relation("EntryOwner")
+  createdEntries    TimeEntry[]        @relation("EntryCreator")
   bulkEntries       BulkEntry[]
   salesTargets      SalesTarget[]
   campaignTargets   CampaignTarget[]
@@ -60,22 +61,24 @@ model Brand {
 }
 
 model TimeEntry {
-  id          String       @id @default(cuid())
-  userId      String
-  sessionId   String?
-  brandId     String?
-  platform    Platform
-  salesAmount Float
-  date        String
-  notes       String?
-  customStart String?
-  customEnd   String?
-  isBackdated Boolean      @default(false)
-  user        User         @relation(fields: [userId], references: [id])
-  session     LiveSession? @relation(fields: [sessionId], references: [id])
-  brand       Brand?       @relation(fields: [brandId], references: [id])
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id              String       @id @default(cuid())
+  userId          String
+  createdByUserId String?      // null = บันทึกเอง, มีค่า = ใครบันทึกแทน
+  sessionId       String?
+  brandId         String?
+  platform        Platform
+  salesAmount     Float
+  date            String
+  notes           String?
+  customStart     String?
+  customEnd       String?
+  isBackdated     Boolean      @default(false)
+  user            User         @relation("EntryOwner", fields: [userId], references: [id])
+  createdBy       User?        @relation("EntryCreator", fields: [createdByUserId], references: [id])
+  session         LiveSession? @relation(fields: [sessionId], references: [id])
+  brand           Brand?       @relation(fields: [brandId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 }
 
 model BulkEntry {

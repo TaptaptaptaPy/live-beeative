@@ -223,6 +223,7 @@ export async function createEntryAsOwner(formData: FormData) {
   await prisma.timeEntry.create({
     data: {
       userId: targetUserId,
+      createdByUserId: session.userId,   // บันทึกว่าใครเป็นคนกด submit
       brandId: brandId || null,
       platform: platform as "TIKTOK" | "SHOPEE" | "FACEBOOK" | "OTHER",
       salesAmount,

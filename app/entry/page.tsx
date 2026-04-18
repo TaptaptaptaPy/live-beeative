@@ -5,7 +5,6 @@ import { createEntry } from "../actions/entries";
 import { logout, switchToOwnerMode } from "../actions/auth";
 import { todayString } from "@/lib/utils";
 import MyRecentEntries from "./MyRecentEntries";
-import AllStaffEntries from "./AllStaffEntries";
 import MySchedule from "./MySchedule";
 import MyStats from "./MyStats";
 import DevBanner from "@/app/dev/DevBanner";
@@ -169,9 +168,7 @@ export default function EntryPage() {
 
       <MySchedule />
 
-      <MyRecentEntries />
-
-      {userSession?.isOwnerEmployee && <AllStaffEntries />}
+      <MyRecentEntries isOwnerEmployee={userSession?.isOwnerEmployee ?? false} />
 
       <form onSubmit={handleSubmit} className="p-4 space-y-4 max-w-lg mx-auto pb-24">
         {/* Date */}
