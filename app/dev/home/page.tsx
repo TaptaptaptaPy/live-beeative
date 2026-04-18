@@ -76,18 +76,6 @@ export default async function DevHomePage() {
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-4 space-y-3">
           <h2 className="text-white font-semibold text-sm">🔑 เข้าถึงหน้าต่างๆ</h2>
 
-          <a href="/owner/dashboard"
-            className="flex items-center justify-between w-full bg-[#111] hover:bg-[#222] border border-[#333] rounded-xl px-4 py-3 transition-colors group">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">📊</span>
-              <div className="text-left">
-                <div className="text-white text-sm font-medium">Owner Dashboard</div>
-                <div className="text-gray-500 text-xs">/owner/dashboard — ดูยอด, ตาราง, การเงิน</div>
-              </div>
-            </div>
-            <span className="text-gray-600 group-hover:text-gray-400">→</span>
-          </a>
-
           <DevSwitchButtons employees={employees} />
         </div>
 

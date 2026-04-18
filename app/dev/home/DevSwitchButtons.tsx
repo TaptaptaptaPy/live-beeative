@@ -1,6 +1,6 @@
 "use client";
 
-import { devSwitchToEmployee } from "@/app/actions/auth";
+import { devSwitchToEmployee, devSwitchToOwner } from "@/app/actions/auth";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -10,6 +10,13 @@ export default function DevSwitchButtons({ employees }: { employees: Employee[] 
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+
+  async function goToOwnerDashboard() {
+    setLoading("owner");
+    const result = await devSwitchToOwner();
+    if (result?.error) { alert(result.error); setLoading(null); }
+    else router.push("/owner/dashboard");
+  }
 
   async function switchTo(emp: Employee) {
     setLoading(emp.id);
@@ -24,6 +31,24 @@ export default function DevSwitchButtons({ employees }: { employees: Employee[] 
 
   return (
     <div className="space-y-2">
+      {/* Owner Dashboard — switch to owner session first, then navigate */}
+      <button
+        onClick={goToOwnerDashboard}
+        disabled={loading === "owner"}
+        className="flex items-center justify-between w-full bg-[#111] hover:bg-[#222] border border-[#333] rounded-xl px-4 py-3 transition-colors group disabled:opacity-50"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-xl">📊</span>
+          <div className="text-left">
+            <div className="text-white text-sm font-medium">
+              {loading === "owner" ? "กำลังเข้า..." : "Owner Dashboard"}
+            </div>
+            <div className="text-gray-500 text-xs">/owner/dashboard — ดูยอด, ตาราง, การเงิน</div>
+          </div>
+        </div>
+        <span className="text-gray-600 group-hover:text-gray-400">→</span>
+      </button>
+
       {/* Toggle employee list */}
       <button
         onClick={() => setOpen(!open)}
