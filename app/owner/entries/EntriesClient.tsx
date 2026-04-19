@@ -23,7 +23,7 @@ type Props = {
 };
 
 const PLATFORM_COLORS: Record<string, string> = {
-  TIKTOK: "#FF004F", SHOPEE: "#EE4D2D", FACEBOOK: "#1877F2", OTHER: "#6B7280",
+  TIKTOK: "#010101", SHOPEE: "#EE4D2D", FACEBOOK: "#1877F2", OTHER: "#6B7280",
 };
 
 function downloadCsv(entries: Entry[]) {

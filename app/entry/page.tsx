@@ -20,7 +20,7 @@ const TIME_PRESETS = [
 ];
 
 const PLATFORMS = [
-  { value: "TIKTOK",   label: "TikTok",   emoji: "🎵", color: "#FF004F" },
+  { value: "TIKTOK",   label: "TikTok",   emoji: "🎵", color: "#010101" },
   { value: "SHOPEE",   label: "Shopee",   emoji: "🛒", color: "#EE4D2D" },
   { value: "FACEBOOK", label: "Facebook", emoji: "📘", color: "#1877F2" },
   { value: "OTHER",    label: "อื่นๆ",     emoji: "📱", color: "#6B7280" },

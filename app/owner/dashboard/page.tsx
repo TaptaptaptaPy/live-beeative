@@ -179,7 +179,7 @@ async function getDashboardData(period: Period, customStart?: string, customEnd?
 
 // Platform display config
 const PLATFORM_META: Record<string, { emoji: string; color: string }> = {
-  TIKTOK:   { emoji: "🎵", color: "#FF004F" },
+  TIKTOK:   { emoji: "🎵", color: "#010101" },
   SHOPEE:   { emoji: "🛒", color: "#EE4D2D" },
   FACEBOOK: { emoji: "📘", color: "#1877F2" },
   OTHER:    { emoji: "📱", color: "#6B7280" },

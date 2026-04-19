@@ -1,7 +1,7 @@
 import { PLATFORM_LABELS } from "@/lib/utils";
 
 const PLATFORM_META: Record<string, { emoji: string; color: string; bg: string }> = {
-  TIKTOK:   { emoji: "🎵", color: "#FF004F", bg: "#FF004F15" },
+  TIKTOK:   { emoji: "🎵", color: "#010101", bg: "#01010112" },
   SHOPEE:   { emoji: "🛒", color: "#EE4D2D", bg: "#EE4D2D15" },
   FACEBOOK: { emoji: "📘", color: "#1877F2", bg: "#1877F215" },
   OTHER:    { emoji: "📱", color: "#6B7280", bg: "#6B728018" },
