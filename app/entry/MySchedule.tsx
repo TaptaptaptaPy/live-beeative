@@ -58,7 +58,19 @@ export default function MySchedule() {
       .finally(() => setLoading(false));
   }, [today]);
 
-  if (!loading && schedules.length === 0) return null;
+  if (!loading && schedules.length === 0) {
+    return (
+      <div className="mx-4 mt-3">
+        <div className="bg-white dark:bg-[#1A1A1A] border border-gray-100 dark:border-[#2A2A2A] rounded-2xl px-4 py-3 flex items-center gap-2">
+          <span className="text-lg">📅</span>
+          <div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">ตารางไลฟ์ของฉัน</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">ยังไม่มีตารางในช่วงนี้</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const todaySchedules    = schedules.filter(s => s.date === today);
   const upcomingSchedules = schedules.filter(s => s.date !== today);

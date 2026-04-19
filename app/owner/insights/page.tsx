@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, PLATFORM_LABELS } from "@/lib/utils";
+import { PlatformBadge } from "@/components/ui/PlatformBadge";
 import InsightsTrendChart from "./InsightsTrendChart";
 import ExportButton from "./ExportButton";
 
@@ -55,7 +56,7 @@ function tlWidth(from: number, to: number): string {
   return `${(clamped / TL_HOURS) * 100}%`;
 }
 
-type PlatStat = { name: string; count: number; total: number; avg: number };
+type PlatStat = { key: string; name: string; count: number; total: number; avg: number };
 type EmpStat = {
   name: string; total: number; count: number;
   slots: Record<string, number>; platforms: Record<string, number>;
@@ -129,7 +130,7 @@ export default async function InsightsPage({
 
   // ── Aggregate ─────────────────────────────────────────────
   const slotMap: Record<string, { count: number; total: number }> = {};
-  const platMap: Record<string, { name: string; count: number; total: number }> = {};
+  const platMap: Record<string, { key: string; name: string; count: number; total: number }> = {};
   const empMap: Record<string, EmpStat> = {};
   const dailyMap: Record<string, number> = {};
   const customRangeMap: Record<string, { start: string; end: string; count: number; total: number }> = {};
@@ -147,7 +148,7 @@ export default async function InsightsPage({
       customRangeMap[rk].count++; customRangeMap[rk].total += e.salesAmount;
     }
 
-    if (!platMap[e.platform]) platMap[e.platform] = { name: platLabel, count: 0, total: 0 };
+    if (!platMap[e.platform]) platMap[e.platform] = { key: e.platform, name: platLabel, count: 0, total: 0 };
     platMap[e.platform].count++; platMap[e.platform].total += e.salesAmount;
 
     if (!empMap[e.userId]) empMap[e.userId] = { name: e.user.name, total: 0, count: 0, slots: {}, platforms: {} };
@@ -197,7 +198,7 @@ export default async function InsightsPage({
 
   const maxComp = Math.max(...compItems.map((c) => c.total), 1);
   const platList: PlatStat[] = Object.values(platMap)
-    .map((p) => ({ ...p, avg: Math.round(p.total / p.count) }))
+    .map((p) => ({ key: p.key, name: p.name, count: p.count, total: p.total, avg: Math.round(p.total / p.count) }))
     .sort((a, b) => b.total - a.total);
   const empList: EmpStat[] = Object.values(empMap).sort((a, b) => b.total - a.total);
   const dailyTrend = Object.entries(dailyMap)
@@ -340,11 +341,11 @@ export default async function InsightsPage({
         <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">เรียงตามยอดขายรวม</p>
         <div className="space-y-3">
           {platList.map((p, i) => (
-            <div key={p.name}>
+            <div key={p.key}>
               <div className="flex justify-between items-center mb-1">
                 <div className="flex items-center gap-1.5">
                   {i === 0 && <span className="text-[10px] bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded-lg font-bold">Best</span>}
-                  <span className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</span>
+                  <PlatformBadge platform={p.key} />
                   <span className="text-xs text-gray-400 dark:text-gray-500">{p.count} ครั้ง</span>
                 </div>
                 <div className="text-right">
@@ -391,8 +392,9 @@ export default async function InsightsPage({
         <div className={`${card} p-4`}>
           <h2 className="font-bold text-gray-900 dark:text-white mb-0.5">👤 × ⏰ พนักงาน vs ช่วงเวลา</h2>
           <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">ดูว่าใครขายดีช่วงไหน</p>
+          <div className="relative">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-xs min-w-max">
               <thead>
                 <tr>
                   <th className="text-left pb-2 text-gray-400 dark:text-gray-500 font-medium pr-3 whitespace-nowrap">พนักงาน</th>
@@ -420,6 +422,9 @@ export default async function InsightsPage({
               </tbody>
             </table>
           </div>
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-[#1A1A1A] to-transparent md:hidden" />
+          </div>
+          <p className="text-[10px] text-gray-300 dark:text-gray-700 mt-1 text-right md:hidden">← เลื่อนดูเพิ่มเติม</p>
         </div>
       )}
 
@@ -428,13 +433,14 @@ export default async function InsightsPage({
         <div className={`${card} p-4`}>
           <h2 className="font-bold text-gray-900 dark:text-white mb-0.5">👤 × 📱 พนักงาน vs Platform</h2>
           <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">ดูว่าใครถนัด Platform ไหน</p>
+          <div className="relative">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-xs min-w-max">
               <thead>
                 <tr>
                   <th className="text-left pb-2 text-gray-400 dark:text-gray-500 font-medium pr-3 whitespace-nowrap">พนักงาน</th>
                   {platList.map((p) => (
-                    <th key={p.name} className="pb-2 text-gray-400 dark:text-gray-500 font-medium text-center min-w-[72px] whitespace-nowrap">{p.name}</th>
+                    <th key={p.key} className="pb-2 font-medium text-center min-w-[80px] whitespace-nowrap"><PlatformBadge platform={p.key} size="xs" /></th>
                   ))}
                 </tr>
               </thead>
@@ -455,6 +461,9 @@ export default async function InsightsPage({
               </tbody>
             </table>
           </div>
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-[#1A1A1A] to-transparent md:hidden" />
+          </div>
+          <p className="text-[10px] text-gray-300 dark:text-gray-700 mt-1 text-right md:hidden">← เลื่อนดูเพิ่มเติม</p>
         </div>
       )}
 

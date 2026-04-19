@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import { PLATFORM_LABELS } from "@/lib/utils";
+import { PlatformBadge } from "@/components/ui/PlatformBadge";
 import ScheduleForm from "./ScheduleForm";
 import DeleteScheduleButton from "./DeleteScheduleButton";
 import WeekPicker from "./WeekPicker";
@@ -22,9 +23,6 @@ function getWeekDates(dateStr: string) {
 
 const DAY_LABELS = ["จ", "อ", "พ", "พฤ", "ศ", "ส", "อา"];
 const DAY_FULL = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
-const PLATFORM_EMOJI: Record<string, string> = {
-  TIKTOK: "🎵", SHOPEE: "🛒", FACEBOOK: "📘", OTHER: "📱",
-};
 
 type EntryGroup = {
   userId: string;
@@ -358,8 +356,8 @@ export default async function SchedulePage({
                                   ⏰ {s.startTime}–{s.endTime}
                                 </span>
                                 {s.platform && (
-                                  <span className={platformMismatch ? "line-through text-gray-300 dark:text-gray-600" : ""}>
-                                    {PLATFORM_EMOJI[s.platform]} {PLATFORM_LABELS[s.platform]}
+                                  <span className={platformMismatch ? "opacity-40 line-through" : ""}>
+                                    <PlatformBadge platform={s.platform} size="xs" />
                                   </span>
                                 )}
                                 {s.brand && (
@@ -383,8 +381,8 @@ export default async function SchedulePage({
                                     </span>
                                   ))}
                                   {actualPlatforms.map((p) => (
-                                    <span key={p} className={`flex items-center gap-0.5 ${platformMismatch && s.platform !== p ? "text-orange-600 font-semibold" : "text-gray-600 dark:text-gray-300"}`}>
-                                      {PLATFORM_EMOJI[p]} {PLATFORM_LABELS[p]}
+                                    <span key={p} className={platformMismatch && s.platform !== p ? "ring-1 ring-orange-400 rounded-full" : ""}>
+                                      <PlatformBadge platform={p} size="xs" />
                                     </span>
                                   ))}
                                   {actualBrandNames.map((b) => (
@@ -452,7 +450,7 @@ export default async function SchedulePage({
                             <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 flex-wrap mt-0.5">
                               <span className="text-green-600 dark:text-green-400 font-medium">✅ บันทึก (ไม่มีแผน)</span>
                               {eg.timeLabel && <span>⏰ {eg.timeLabel}</span>}
-                              <span>{PLATFORM_EMOJI[eg.platform]} {PLATFORM_LABELS[eg.platform]}</span>
+                              <PlatformBadge platform={eg.platform} size="xs" />
                               {eg.brandName && (
                                 <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium"
                                   style={{ background: (eg.brandColor ?? "#ccc") + "22", color: eg.brandColor ?? "#555" }}>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PLATFORM_LABELS, formatCurrency } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PlatformBadge } from "@/components/ui/PlatformBadge";
 import DeleteEntryButton from "./DeleteEntryButton";
 import EditEntryModal from "./EditEntryModal";
 
@@ -21,24 +22,9 @@ type Props = {
   filters: { dateFrom: string; dateTo: string; userId: string; platform: string };
 };
 
-const PLATFORM_META: Record<string, { emoji: string; color: string; bg: string }> = {
-  TIKTOK:   { emoji: "🎵", color: "#FF004F", bg: "#FF004F15" },
-  SHOPEE:   { emoji: "🛒", color: "#EE4D2D", bg: "#EE4D2D15" },
-  FACEBOOK: { emoji: "📘", color: "#1877F2", bg: "#1877F215" },
-  OTHER:    { emoji: "📱", color: "#6B7280", bg: "#6B728018" },
+const PLATFORM_COLORS: Record<string, string> = {
+  TIKTOK: "#FF004F", SHOPEE: "#EE4D2D", FACEBOOK: "#1877F2", OTHER: "#6B7280",
 };
-
-function PlatformBadge({ platform }: { platform: string }) {
-  const meta = PLATFORM_META[platform] ?? PLATFORM_META.OTHER;
-  return (
-    <span
-      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full leading-none"
-      style={{ background: meta.bg, color: meta.color }}
-    >
-      {meta.emoji} {PLATFORM_LABELS[platform] ?? platform}
-    </span>
-  );
-}
 
 function downloadCsv(entries: Entry[]) {
   const rows = [
@@ -169,11 +155,11 @@ export default function EntriesClient({ entries, employees, totalSales, filters 
       ) : (
         <div className="space-y-2">
           {entries.map(entry => {
-            const meta = PLATFORM_META[entry.platform] ?? PLATFORM_META.OTHER;
+            const borderColor = PLATFORM_COLORS[entry.platform] ?? PLATFORM_COLORS.OTHER;
             return (
               <div key={entry.id}
                 className="bg-white dark:bg-[#1A1A1A] rounded-2xl p-4 border border-[#E5E7EB] dark:border-[#2A2A2A] border-l-[3px] transition-all hover:shadow-sm dark:hover:border-[#3A3A3A]"
-                style={{ borderLeftColor: meta.color }}>
+                style={{ borderLeftColor: borderColor }}>
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex-1 min-w-0">
                     {/* top row: name + badges */}

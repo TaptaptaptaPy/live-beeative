@@ -24,7 +24,19 @@ export default function MyStats() {
     fetch("/api/my-stats").then(r => r.json()).then(setStats).catch(() => {});
   }, []);
 
-  if (!stats) return null;
+  if (!stats) {
+    return (
+      <div className="mx-4 mt-3">
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl overflow-hidden border border-gray-100 dark:border-[#2A2A2A] animate-pulse">
+          <div className="px-4 py-3 h-8 bg-gray-100 dark:bg-[#2A2A2A] rounded-t-2xl" />
+          <div className="grid grid-cols-2 gap-px bg-gray-100 dark:bg-[#2A2A2A]">
+            <div className="bg-white dark:bg-[#1A1A1A] px-4 py-3 h-16" />
+            <div className="bg-white dark:bg-[#1A1A1A] px-4 py-3 h-16" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const pct = stats.targetAmount > 0
     ? Math.min(100, (stats.myMonthSales / stats.targetAmount) * 100)
@@ -32,7 +44,7 @@ export default function MyStats() {
 
   return (
     <div className="mx-4 mt-3">
-      <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl overflow-hidden border border-gray-100 dark:border-[#2A2A2A] shadow-sm dark:shadow-none">
+      <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl overflow-hidden border border-[#E5E7EB] dark:border-[#2A2A2A]">
         {/* Header */}
         <div className="px-4 pt-3 pb-2">
           <span className="text-sm font-bold text-gray-900 dark:text-white">

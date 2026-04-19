@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, PLATFORM_LABELS } from "@/lib/utils";
+import { PlatformBadge } from "@/components/ui/PlatformBadge";
 import ReportsCharts from "./ReportsCharts";
 import DailyExportButton from "./DailyExportButton";
 
@@ -249,12 +250,15 @@ export default async function ReportsPage({
       </div>
 
       {/* Detail table */}
-      <div className={`${card} p-4 overflow-x-auto`}>
+      <div className={`${card} p-4`}>
         <h2 className="font-bold text-gray-900 dark:text-white mb-3">📋 รายการทั้งหมด</h2>
         {entries.length === 0 ? (
           <p className="text-gray-400 dark:text-gray-500 text-center py-4">ไม่มีข้อมูลในช่วงนี้</p>
         ) : (
-          <table className="w-full text-sm">
+          <>
+          <div className="relative">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[480px]">
             <thead>
               <tr className="text-left border-b-2 border-[#F5D400]">
                 <th className="pb-2 font-semibold text-gray-900 dark:text-white">วันที่</th>
@@ -272,7 +276,7 @@ export default async function ReportsPage({
                     {e.isBackdated && <span className="ml-1 text-xs text-orange-400">(ย้อน)</span>}
                   </td>
                   <td className="py-2 font-medium text-gray-900 dark:text-white">{e.user.name}</td>
-                  <td className="py-2 text-gray-600 dark:text-gray-300">{PLATFORM_LABELS[e.platform]}</td>
+                  <td className="py-2"><PlatformBadge platform={e.platform} size="xs" /></td>
                   <td className="py-2 text-gray-500 dark:text-gray-400 text-xs">{e.session?.name || "กำหนดเอง"}</td>
                   <td className="py-2 font-bold text-green-600 dark:text-green-400 text-right">{formatCurrency(e.salesAmount)}</td>
                 </tr>
@@ -283,6 +287,11 @@ export default async function ReportsPage({
               </tr>
             </tbody>
           </table>
+          </div>
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-[#1A1A1A] to-transparent md:hidden" />
+          </div>
+          <p className="text-[10px] text-gray-300 dark:text-gray-700 mt-1 text-right md:hidden">← เลื่อนดูเพิ่มเติม</p>
+          </>
         )}
       </div>
     </div>

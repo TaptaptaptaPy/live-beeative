@@ -2,16 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { updateEntry, deleteEntry } from "@/app/actions/entries";
+import { PlatformBadge } from "@/components/ui/PlatformBadge";
 
 const PLATFORM_LABELS: Record<string, string> = {
   TIKTOK: "TikTok", SHOPEE: "Shopee", FACEBOOK: "Facebook", OTHER: "อื่นๆ",
-};
-
-const PLATFORM_META: Record<string, { emoji: string; color: string; bg: string }> = {
-  TIKTOK:   { emoji: "🎵", color: "#FF004F", bg: "#FF004F15" },
-  SHOPEE:   { emoji: "🛒", color: "#EE4D2D", bg: "#EE4D2D15" },
-  FACEBOOK: { emoji: "📘", color: "#1877F2", bg: "#1877F215" },
-  OTHER:    { emoji: "📱", color: "#6B7280", bg: "#6B728015" },
 };
 
 type Entry = {
@@ -64,18 +58,9 @@ function fmtBaht(n: number): string {
   return "฿" + n.toLocaleString("th-TH", { maximumFractionDigits: 0 });
 }
 
-// ─── platform pill ────────────────────────────────────────────────────────────
-
+// ─── platform pill (alias to shared badge, xs size) ──────────────────────────
 function PlatformPill({ platform }: { platform: string }) {
-  const meta = PLATFORM_META[platform] ?? PLATFORM_META.OTHER;
-  return (
-    <span
-      className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none"
-      style={{ background: meta.bg, color: meta.color }}
-    >
-      {meta.emoji} {PLATFORM_LABELS[platform] ?? platform}
-    </span>
-  );
+  return <PlatformBadge platform={platform} size="xs" />;
 }
 
 // ─── inline edit form ─────────────────────────────────────────────────────────
