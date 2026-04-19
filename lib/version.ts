@@ -2,7 +2,7 @@
 // APP VERSION — อัปเดตทุกครั้งที่มีการแก้ไข
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const APP_VERSION = "1.14.4";
+export const APP_VERSION = "1.14.6";
 export const APP_VERSION_DATE = "2026-04-19";
 
 export type VersionEntry = {
@@ -14,6 +14,27 @@ export type VersionEntry = {
 };
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "1.14.6",
+    date: "2026-04-19",
+    type: "patch",
+    title: "เปลี่ยนสี TikTok เป็น Brand Black",
+    changes: [
+      "สี TikTok เปลี่ยนจากแดง (#FF004F) → ดำ (#010101) ตาม brand color จริง",
+      "ครอบคลุมทุกจุด: PlatformBadge, Dashboard chart, Entry form, Entries list, CSS token",
+    ],
+  },
+  {
+    version: "1.14.5",
+    date: "2026-04-19",
+    type: "minor",
+    title: "Platform Badge ครบทุกหน้า + Scroll Indicator + Empty States",
+    changes: [
+      "Platform badge แสดงครบทุกหน้าใน owner section",
+      "Scroll indicator สำหรับ list ที่ยาว",
+      "Empty states ครบทุก section",
+    ],
+  },
   {
     version: "1.14.4",
     date: "2026-04-19",
