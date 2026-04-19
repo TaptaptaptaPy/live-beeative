@@ -21,7 +21,7 @@ export const CHANGELOG: VersionEntry[] = [
     title: "เปลี่ยนสี TikTok เป็น Brand Black",
     changes: [
       "สี TikTok เปลี่ยนจากแดง (#FF004F) → ดำ (#010101) ตาม brand color จริง",
-      "ครอบคลุมทุกจุด: PlatformBadge, Dashboard chart, Entry form, Entries list, CSS token",
+      "ครอบคลุมทุกจุด: PlatformBadge, DashboardCharts (donut + bar), Dashboard page, Entry form, Entries list, CSS token",
     ],
   },
   {
