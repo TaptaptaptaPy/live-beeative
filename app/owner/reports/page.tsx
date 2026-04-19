@@ -64,7 +64,6 @@ export default async function ReportsPage({
   const totalBulk = bulkEntries.reduce((s, e) => s + e.totalSales, 0);
   const grandTotal = totalSales + totalBulk;
 
-  // Group by granularity
   const grouped: Record<string, number> = {};
 
   if (granularity === "session") {
@@ -90,11 +89,9 @@ export default async function ReportsPage({
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, total]) => ({ key, total }));
 
-  // Per platform breakdown
   const byPlatform: Record<string, number> = {};
   for (const e of entries) byPlatform[e.platform] = (byPlatform[e.platform] || 0) + e.salesAmount;
 
-  // Per employee
   const byEmployee: Record<string, { name: string; total: number; count: number }> = {};
   for (const e of entries) {
     if (!byEmployee[e.userId]) byEmployee[e.userId] = { name: e.user.name, total: 0, count: 0 };
@@ -122,11 +119,13 @@ export default async function ReportsPage({
     return `/owner/reports?${p.toString()}`;
   }
 
-  return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-[#1A1A1A] pt-2">📊 รายงานละเอียด</h1>
+  const inputCls = "w-full border border-gray-200 dark:border-[#2A2A2A] bg-white dark:bg-[#242424] text-gray-700 dark:text-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5D400]";
+  const card = "bg-white dark:bg-[#1A1A1A] rounded-2xl border border-[#E5E7EB] dark:border-[#2A2A2A]";
 
-      {/* Daily Export Card — new format */}
+  return (
+    <div className="p-4 space-y-4 max-w-2xl mx-auto animate-fade-in">
+      <h1 className="text-xl font-bold text-gray-900 dark:text-white pt-2">📊 รายงานละเอียด</h1>
+
       <DailyExportButton />
 
       {/* Presets */}
@@ -135,8 +134,8 @@ export default async function ReportsPage({
           <a key={p.label} href={buildUrl({ startDate: p.start, endDate: p.end })}
             className={`text-sm px-3 py-1.5 rounded-xl font-medium transition-all border-2 ${
               startDate === p.start && endDate === p.end
-                ? "border-[#F5D400] bg-[#FFF8CC] text-[#1A1A1A]"
-                : "border-gray-200 text-gray-600 bg-white"
+                ? "border-[#F5D400] bg-[#FFF8CC] dark:bg-[#2A2200] text-gray-900 dark:text-[#F5D400]"
+                : "border-gray-200 dark:border-[#2A2A2A] text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1A1A1A]"
             }`}>
             {p.label}
           </a>
@@ -144,43 +143,43 @@ export default async function ReportsPage({
       </div>
 
       {/* Filters */}
-      <form method="GET" action="/owner/reports" className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+      <form method="GET" action="/owner/reports" className={`${card} p-4 space-y-3`}>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-gray-500 block mb-1">วันที่เริ่ม</label>
-            <input type="date" name="startDate" defaultValue={startDate}
-              className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]" />
+            <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">วันที่เริ่ม</label>
+            <input type="date" name="startDate" defaultValue={startDate} className={inputCls} />
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">วันที่สิ้นสุด</label>
-            <input type="date" name="endDate" defaultValue={endDate}
-              className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]" />
+            <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">วันที่สิ้นสุด</label>
+            <input type="date" name="endDate" defaultValue={endDate} className={inputCls} />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-gray-500 block mb-1">พนักงาน</label>
-            <select name="userId" defaultValue={userId}
-              className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]">
+            <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">พนักงาน</label>
+            <select name="userId" defaultValue={userId} className={inputCls}>
               <option value="">ทั้งหมด</option>
               {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Platform</label>
-            <select name="platform" defaultValue={platform}
-              className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]">
+            <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Platform</label>
+            <select name="platform" defaultValue={platform} className={inputCls}>
               <option value="">ทั้งหมด</option>
               {Object.entries(PLATFORM_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
         </div>
         <div>
-          <label className="text-xs text-gray-500 block mb-2">แสดงผลแบบ</label>
+          <label className="text-xs text-gray-500 dark:text-gray-400 block mb-2">แสดงผลแบบ</label>
           <div className="grid grid-cols-4 gap-2">
             {GRANULARITY_OPTIONS.map(g => (
               <label key={g.value}
-                className={`flex items-center justify-center p-2 rounded-xl border-2 cursor-pointer text-xs font-medium transition-all ${granularity === g.value ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200"}`}>
+                className={`flex items-center justify-center p-2 rounded-xl border-2 cursor-pointer text-xs font-medium transition-all ${
+                  granularity === g.value
+                    ? "border-[#F5D400] bg-[#FFF8CC] dark:bg-[#2A2200] text-gray-900 dark:text-[#F5D400]"
+                    : "border-gray-200 dark:border-[#2A2A2A] text-gray-600 dark:text-gray-400"
+                }`}>
                 <input type="radio" name="granularity" value={g.value}
                   defaultChecked={granularity === g.value} className="sr-only" />
                 {g.label}
@@ -197,19 +196,19 @@ export default async function ReportsPage({
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-white rounded-2xl p-3 shadow-sm border-l-4 border-[#F5D400]">
-          <div className="text-xs text-gray-500 mb-1">ยอดรายการ</div>
-          <div className="font-bold text-[#1A1A1A]">{formatCurrency(totalSales)}</div>
-          <div className="text-xs text-gray-400">{entries.length} รายการ</div>
+        <div className={`${card} p-3 border-l-[3px] border-l-[#F5D400]`}>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">ยอดรายการ</div>
+          <div className="font-bold text-gray-900 dark:text-white">{formatCurrency(totalSales)}</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">{entries.length} รายการ</div>
         </div>
-        <div className="bg-white rounded-2xl p-3 shadow-sm border-l-4 border-orange-400">
-          <div className="text-xs text-gray-500 mb-1">ยอดย้อนหลัง</div>
-          <div className="font-bold text-[#1A1A1A]">{formatCurrency(totalBulk)}</div>
-          <div className="text-xs text-gray-400">{bulkEntries.length} รายการ</div>
+        <div className={`${card} p-3 border-l-[3px] border-l-orange-400`}>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">ยอดย้อนหลัง</div>
+          <div className="font-bold text-gray-900 dark:text-white">{formatCurrency(totalBulk)}</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">{bulkEntries.length} รายการ</div>
         </div>
-        <div className="bg-white rounded-2xl p-3 shadow-sm border-l-4 border-green-400">
-          <div className="text-xs text-gray-500 mb-1">รวมทั้งหมด</div>
-          <div className="font-bold text-green-600">{formatCurrency(grandTotal)}</div>
+        <div className={`${card} p-3 border-l-[3px] border-l-green-400`}>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">รวมทั้งหมด</div>
+          <div className="font-bold text-green-600 dark:text-green-400">{formatCurrency(grandTotal)}</div>
         </div>
       </div>
 
@@ -219,10 +218,10 @@ export default async function ReportsPage({
       } granularity={granularity} />
 
       {/* Employee leaderboard */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <h2 className="font-bold text-[#1A1A1A] mb-3">🏆 Leaderboard พนักงาน</h2>
+      <div className={`${card} p-4`}>
+        <h2 className="font-bold text-gray-900 dark:text-white mb-3">🏆 Leaderboard พนักงาน</h2>
         {Object.values(byEmployee).length === 0 ? (
-          <p className="text-gray-400 text-center py-4">ไม่มีข้อมูลในช่วงนี้</p>
+          <p className="text-gray-400 dark:text-gray-500 text-center py-4">ไม่มีข้อมูลในช่วงนี้</p>
         ) : (
           <div className="space-y-3">
             {Object.values(byEmployee).sort((a, b) => b.total - a.total).map((emp, i) => {
@@ -233,12 +232,12 @@ export default async function ReportsPage({
                   <div className="flex justify-between items-center mb-1">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{MEDALS[i] || "👤"}</span>
-                      <span className="font-semibold text-[#1A1A1A] text-sm">{emp.name}</span>
-                      <span className="text-xs text-gray-400">{emp.count} รายการ</span>
+                      <span className="font-semibold text-gray-900 dark:text-white text-sm">{emp.name}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{emp.count} รายการ</span>
                     </div>
-                    <span className="font-bold text-[#1A1A1A]">{formatCurrency(emp.total)}</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(emp.total)}</span>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-100 dark:bg-[#2A2A2A] rounded-full overflow-hidden">
                     <div className="h-full rounded-full"
                       style={{ width: `${(emp.total / max) * 100}%`, background: "linear-gradient(90deg, #F5D400, #F5A882)" }} />
                   </div>
@@ -250,37 +249,37 @@ export default async function ReportsPage({
       </div>
 
       {/* Detail table */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm overflow-x-auto">
-        <h2 className="font-bold text-[#1A1A1A] mb-3">📋 รายการทั้งหมด</h2>
+      <div className={`${card} p-4 overflow-x-auto`}>
+        <h2 className="font-bold text-gray-900 dark:text-white mb-3">📋 รายการทั้งหมด</h2>
         {entries.length === 0 ? (
-          <p className="text-gray-400 text-center py-4">ไม่มีข้อมูลในช่วงนี้</p>
+          <p className="text-gray-400 dark:text-gray-500 text-center py-4">ไม่มีข้อมูลในช่วงนี้</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left border-b-2 border-[#F5D400]">
-                <th className="pb-2 font-semibold text-[#1A1A1A]">วันที่</th>
-                <th className="pb-2 font-semibold text-[#1A1A1A]">พนักงาน</th>
-                <th className="pb-2 font-semibold text-[#1A1A1A]">Platform</th>
-                <th className="pb-2 font-semibold text-[#1A1A1A]">ช่วงเวลา</th>
-                <th className="pb-2 font-semibold text-[#1A1A1A] text-right">ยอด</th>
+                <th className="pb-2 font-semibold text-gray-900 dark:text-white">วันที่</th>
+                <th className="pb-2 font-semibold text-gray-900 dark:text-white">พนักงาน</th>
+                <th className="pb-2 font-semibold text-gray-900 dark:text-white">Platform</th>
+                <th className="pb-2 font-semibold text-gray-900 dark:text-white">ช่วงเวลา</th>
+                <th className="pb-2 font-semibold text-gray-900 dark:text-white text-right">ยอด</th>
               </tr>
             </thead>
             <tbody>
               {entries.map(e => (
-                <tr key={e.id} className="border-b border-gray-50 hover:bg-[#FFFBEB]">
-                  <td className="py-2 text-gray-600">
+                <tr key={e.id} className="border-b border-gray-50 dark:border-[#222] hover:bg-[#FFFBEB] dark:hover:bg-[#1C1800] transition-colors">
+                  <td className="py-2 text-gray-600 dark:text-gray-300">
                     {e.date}
                     {e.isBackdated && <span className="ml-1 text-xs text-orange-400">(ย้อน)</span>}
                   </td>
-                  <td className="py-2 font-medium text-[#1A1A1A]">{e.user.name}</td>
-                  <td className="py-2 text-gray-600">{PLATFORM_LABELS[e.platform]}</td>
-                  <td className="py-2 text-gray-500 text-xs">{e.session?.name || "กำหนดเอง"}</td>
-                  <td className="py-2 font-bold text-green-600 text-right">{formatCurrency(e.salesAmount)}</td>
+                  <td className="py-2 font-medium text-gray-900 dark:text-white">{e.user.name}</td>
+                  <td className="py-2 text-gray-600 dark:text-gray-300">{PLATFORM_LABELS[e.platform]}</td>
+                  <td className="py-2 text-gray-500 dark:text-gray-400 text-xs">{e.session?.name || "กำหนดเอง"}</td>
+                  <td className="py-2 font-bold text-green-600 dark:text-green-400 text-right">{formatCurrency(e.salesAmount)}</td>
                 </tr>
               ))}
-              <tr className="bg-[#FFF8CC]">
-                <td colSpan={4} className="py-2 font-bold text-[#1A1A1A] px-1">รวม</td>
-                <td className="py-2 font-bold text-[#1A1A1A] text-right">{formatCurrency(totalSales)}</td>
+              <tr className="bg-[#FFF8CC] dark:bg-[#1C1800]">
+                <td colSpan={4} className="py-2 font-bold text-gray-900 dark:text-[#F5D400] px-1">รวม</td>
+                <td className="py-2 font-bold text-gray-900 dark:text-white text-right">{formatCurrency(totalSales)}</td>
               </tr>
             </tbody>
           </table>

@@ -91,37 +91,35 @@ export default function EntryPage() {
   if (success) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-500 to-emerald-600">
-        <div className="bg-white rounded-3xl p-8 shadow-2xl text-center max-w-sm w-full animate-slide-up">
-          {/* animated check */}
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl">
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-3xl p-8 shadow-2xl text-center max-w-sm w-full animate-slide-up">
+          <div className="w-20 h-20 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl">
             ✅
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">บันทึกสำเร็จ!</h2>
-          <p className="text-gray-400 text-sm mb-6">ยอดขายถูกบันทึกเรียบร้อยแล้ว</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">บันทึกสำเร็จ!</h2>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mb-6">ยอดขายถูกบันทึกเรียบร้อยแล้ว</p>
 
-          {/* summary card */}
-          <div className="bg-gray-50 rounded-2xl p-4 mb-6 text-left space-y-2">
+          <div className="bg-gray-50 dark:bg-[#141414] rounded-2xl p-4 mb-6 text-left space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Platform</span>
+              <span className="text-gray-500 dark:text-gray-400">Platform</span>
               <span className="font-semibold" style={{ color: activePlatform?.color ?? "#1A1A1A" }}>
                 {activePlatform?.emoji} {activePlatform?.label}
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">วันที่</span>
-              <span className="font-semibold text-gray-800">
+              <span className="text-gray-500 dark:text-gray-400">วันที่</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-200">
                 {date}{isBackdated && <span className="text-orange-500 text-xs ml-1">(ย้อนหลัง)</span>}
               </span>
             </div>
-            <div className="border-t border-gray-200 pt-2 flex justify-between">
-              <span className="text-gray-500 text-sm">ยอดขาย</span>
-              <span className="font-bold text-green-600 text-xl">
+            <div className="border-t border-gray-200 dark:border-[#2A2A2A] pt-2 flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400 text-sm">ยอดขาย</span>
+              <span className="font-bold text-green-600 dark:text-green-400 text-xl">
                 ฿{parseFloat(salesAmount).toLocaleString("th-TH", { maximumFractionDigits: 0 })}
               </span>
             </div>
             {commission !== null && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Commission ({activeBrand?.commissionRate}%)</span>
+                <span className="text-gray-400 dark:text-gray-500">Commission ({activeBrand?.commissionRate}%)</span>
                 <span className="font-semibold text-green-500">
                   ≈฿{commission.toLocaleString("th-TH", { maximumFractionDigits: 0 })}
                 </span>
@@ -135,7 +133,7 @@ export default function EntryPage() {
             + กรอกยอดใหม่
           </button>
           <button onClick={() => logout()}
-            className="w-full h-11 bg-gray-100 text-gray-500 rounded-2xl font-semibold text-sm">
+            className="w-full h-11 bg-gray-100 dark:bg-[#242424] text-gray-500 dark:text-gray-400 rounded-2xl font-semibold text-sm">
             ออกจากระบบ
           </button>
         </div>
@@ -144,8 +142,11 @@ export default function EntryPage() {
   }
 
   // ── Main form ───────────────────────────────────────────────────────────────
+  const formCard = "bg-white dark:bg-[#1A1A1A] rounded-2xl p-4 border border-[#E5E7EB] dark:border-[#2A2A2A] border-l-[3px] border-l-[#F5D400]";
+  const inputCls = "w-full border-2 border-gray-200 dark:border-[#2A2A2A] rounded-xl px-4 py-3 focus:outline-none focus:border-[#F5D400] bg-white dark:bg-[#242424] text-gray-900 dark:text-gray-100";
+
   return (
-    <main className="min-h-screen bg-[#FFFBEB]">
+    <main className="min-h-screen bg-[#FFFBEB] dark:bg-[#0F0F0F]">
       <DevBanner />
 
       {/* Header */}
@@ -195,63 +196,64 @@ export default function EntryPage() {
       <form onSubmit={handleSubmit} className="p-4 space-y-3 max-w-lg mx-auto pb-32">
 
         {/* Date */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
+        <div className={formCard}>
           <div className="flex items-center justify-between mb-2">
-            <label className="font-semibold text-[#1A1A1A]">📅 วันที่</label>
+            <label className="font-semibold text-gray-900 dark:text-white">📅 วันที่</label>
             {isBackdated && (
-              <span className="text-xs text-orange-500 font-medium bg-orange-50 px-2 py-0.5 rounded-full">ย้อนหลัง</span>
+              <span className="text-xs text-orange-500 font-medium bg-orange-50 dark:bg-orange-950/40 px-2 py-0.5 rounded-full">ย้อนหลัง</span>
             )}
           </div>
           <input type="date" value={date} max={today} onChange={e => setDate(e.target.value)}
-            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-[#F5D400] bg-white" />
+            className={`${inputCls} text-lg`} />
         </div>
 
         {/* Session presets */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
-          <label className="font-semibold text-[#1A1A1A] mb-3 block">⏰ ช่วงเวลาไลฟ์</label>
+        <div className={formCard}>
+          <label className="font-semibold text-gray-900 dark:text-white mb-3 block">⏰ ช่วงเวลาไลฟ์</label>
           <div className="grid grid-cols-3 gap-2">
             {TIME_PRESETS.map(p => (
               <button key={p.id} type="button" onClick={() => setSelectedPreset(p.id)}
                 className={`p-3 rounded-xl border-2 text-center transition-all ${
                   selectedPreset === p.id
-                    ? "border-[#F5D400] bg-[#FFF8CC]"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-[#F5D400] bg-[#FFF8CC] dark:bg-[#2A2200]"
+                    : "border-gray-200 dark:border-[#2A2A2A] hover:border-gray-300 dark:hover:border-[#3A3A3A]"
                 }`}>
-                <div className="font-semibold text-[#1A1A1A] text-sm">{p.name}</div>
-                <div className="text-[11px] text-gray-400 mt-0.5">{p.sub}</div>
+                <div className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</div>
+                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{p.sub}</div>
               </button>
             ))}
           </div>
           {isCustomTime && (
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">เริ่ม</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">เริ่ม</label>
                 <input type="time" value={customStart} onChange={e => setCustomStart(e.target.value)}
-                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-3 focus:outline-none focus:border-[#F5D400]" />
+                  className={inputCls} />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">สิ้นสุด</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">สิ้นสุด</label>
                 <input type="time" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
-                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-3 focus:outline-none focus:border-[#F5D400]" />
+                  className={inputCls} />
               </div>
             </div>
           )}
         </div>
 
-        {/* Platform — large tap targets with brand colors */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
-          <label className="font-semibold text-[#1A1A1A] mb-3 block">📱 Platform</label>
+        {/* Platform */}
+        <div className={formCard}>
+          <label className="font-semibold text-gray-900 dark:text-white mb-3 block">📱 Platform</label>
           <div className="grid grid-cols-2 gap-2">
             {PLATFORMS.map(p => {
               const isActive = platform === p.value;
               return (
                 <button key={p.value} type="button" onClick={() => setPlatform(p.value)}
                   className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all ${
-                    isActive ? "border-transparent" : "border-gray-200 hover:border-gray-300"
+                    isActive ? "border-transparent" : "border-gray-200 dark:border-[#2A2A2A] hover:border-gray-300 dark:hover:border-[#3A3A3A]"
                   }`}
-                  style={isActive ? { borderColor: p.color, background: p.color + "12" } : {}}>
+                  style={isActive ? { borderColor: p.color, background: p.color + "18" } : {}}>
                   <span className="text-3xl">{p.emoji}</span>
-                  <span className="font-semibold text-sm" style={{ color: isActive ? p.color : "#1A1A1A" }}>
+                  <span className={`font-semibold text-sm ${isActive ? "" : "text-gray-900 dark:text-white"}`}
+                    style={isActive ? { color: p.color } : {}}>
                     {p.label}
                   </span>
                 </button>
@@ -262,21 +264,29 @@ export default function EntryPage() {
 
         {/* Brand */}
         {brands.length > 0 && (
-          <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
-            <label className="font-semibold text-[#1A1A1A] mb-3 block">🏷️ แบรนด์ที่ขาย</label>
+          <div className={formCard}>
+            <label className="font-semibold text-gray-900 dark:text-white mb-3 block">🏷️ แบรนด์ที่ขาย</label>
             <button type="button" onClick={() => setBrandId("")}
-              className={`w-full mb-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${!brandId ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200 hover:border-gray-300"}`}>
-              <div className="font-semibold text-[#1A1A1A] text-sm">📦 ยอดรวม (ไม่แยกแบรนด์)</div>
-              <div className="text-[11px] text-gray-400 mt-0.5">ใช้เมื่อขายหลายแบรนด์ หรือไม่ทราบแบรนด์</div>
+              className={`w-full mb-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${
+                !brandId
+                  ? "border-[#F5D400] bg-[#FFF8CC] dark:bg-[#2A2200]"
+                  : "border-gray-200 dark:border-[#2A2A2A] hover:border-gray-300 dark:hover:border-[#3A3A3A]"
+              }`}>
+              <div className="font-semibold text-gray-900 dark:text-white text-sm">📦 ยอดรวม (ไม่แยกแบรนด์)</div>
+              <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">ใช้เมื่อขายหลายแบรนด์ หรือไม่ทราบแบรนด์</div>
             </button>
-            <div className="text-[11px] text-gray-400 mb-2 font-medium">หรือเลือกแบรนด์เฉพาะ</div>
+            <div className="text-[11px] text-gray-400 dark:text-gray-500 mb-2 font-medium">หรือเลือกแบรนด์เฉพาะ</div>
             <div className="flex gap-2 flex-wrap">
               {brands.map(b => (
                 <button key={b.id} type="button" onClick={() => setBrandId(b.id)}
-                  className={`px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all flex items-center gap-1.5 ${brandId === b.id ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-200 hover:border-gray-300"}`}>
+                  className={`px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all flex items-center gap-1.5 ${
+                    brandId === b.id
+                      ? "border-[#F5D400] bg-[#FFF8CC] dark:bg-[#2A2200]"
+                      : "border-gray-200 dark:border-[#2A2A2A] hover:border-gray-300 dark:hover:border-[#3A3A3A]"
+                  }`}>
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: b.color }} />
-                  {b.name}
-                  <span className="text-gray-400 text-xs">{b.commissionRate}%</span>
+                  <span className="text-gray-900 dark:text-white">{b.name}</span>
+                  <span className="text-gray-400 dark:text-gray-500 text-xs">{b.commissionRate}%</span>
                 </button>
               ))}
             </div>
@@ -284,20 +294,20 @@ export default function EntryPage() {
         )}
 
         {/* Sales amount */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
-          <label className="font-semibold text-[#1A1A1A] mb-2 block">💰 ยอดขาย (บาท)</label>
+        <div className={formCard}>
+          <label className="font-semibold text-gray-900 dark:text-white mb-2 block">💰 ยอดขาย (บาท)</label>
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">฿</span>
             <input
               type="number" inputMode="numeric" value={salesAmount}
               onChange={e => setSalesAmount(e.target.value)}
               placeholder="0" min="0"
-              className="w-full border-2 border-gray-200 rounded-xl pl-9 pr-4 py-4 text-2xl font-bold focus:outline-none focus:border-[#F5D400]"
+              className="w-full border-2 border-gray-200 dark:border-[#2A2A2A] rounded-xl pl-9 pr-4 py-4 text-2xl font-bold focus:outline-none focus:border-[#F5D400] bg-white dark:bg-[#242424] text-gray-900 dark:text-gray-100"
             />
           </div>
           {salesAmount && (
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-green-600 font-bold text-lg">
+              <span className="text-green-600 dark:text-green-400 font-bold text-lg">
                 ฿{parseFloat(salesAmount).toLocaleString("th-TH", { maximumFractionDigits: 0 })}
               </span>
               {commission !== null && (
@@ -310,22 +320,22 @@ export default function EntryPage() {
         </div>
 
         {/* Notes */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[#F5D400]">
-          <label className="font-semibold text-[#1A1A1A] mb-2 block">📝 หมายเหตุ (ถ้ามี)</label>
+        <div className={formCard}>
+          <label className="font-semibold text-gray-900 dark:text-white mb-2 block">📝 หมายเหตุ (ถ้ามี)</label>
           <textarea value={notes} onChange={e => setNotes(e.target.value)}
             placeholder="เช่น ยอดรวม 2 แพลตฟอร์ม, มีโปรโมชั่น..." rows={2}
-            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#F5D400] resize-none text-sm" />
+            className={`${inputCls} resize-none text-sm`} />
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl px-4 py-3 text-sm font-medium flex items-center gap-2">
+          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-2xl px-4 py-3 text-sm font-medium flex items-center gap-2">
             <span>⚠️</span> {error}
           </div>
         )}
       </form>
 
       {/* Sticky submit */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur border-t-2 border-[#F5D400] shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur border-t-2 border-[#F5D400] shadow-lg">
         <button
           type="submit"
           form=""

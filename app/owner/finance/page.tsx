@@ -40,7 +40,6 @@ export default async function FinancePage({
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
   const profit = totalRevenue - totalExpenses;
 
-  // Commission calculation per brand
   const brandMap: Record<string, { name: string; commissionRate: number; color: string }> = {};
   for (const b of allBrands) brandMap[b.id] = b;
 
@@ -60,7 +59,6 @@ export default async function FinancePage({
   const brandedSales = totalRevenue - unbrandedSales;
   const commissionCoverage = totalRevenue > 0 ? Math.round((brandedSales / totalRevenue) * 100) : 0;
 
-  // Per employee sales
   const empSales: Record<string, { name: string; sales: number; salary: number; incentiveRate: number }> = {};
   for (const emp of employees) {
     empSales[emp.id] = { name: emp.name, sales: 0, salary: emp.salary, incentiveRate: emp.incentiveRate };
@@ -69,7 +67,6 @@ export default async function FinancePage({
     if (empSales[e.userId]) empSales[e.userId].sales += e.salesAmount;
   }
 
-  // By expense category
   const byCat: Record<string, number> = {};
   for (const e of expenses) {
     byCat[e.category] = (byCat[e.category] || 0) + e.amount;
@@ -81,38 +78,40 @@ export default async function FinancePage({
     total,
   })).sort((a, b) => b.total - a.total);
 
+  const card = "bg-white dark:bg-[#1A1A1A] rounded-2xl border border-[#E5E7EB] dark:border-[#2A2A2A]";
+
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto">
+    <div className="p-4 space-y-4 max-w-2xl mx-auto animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between pt-2">
-        <h1 className="text-2xl font-bold text-[#1A1A1A]">💰 รายงานการเงิน</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">💰 รายงานการเงิน</h1>
         <MonthSelector value={month} />
       </div>
 
-      <p className="text-sm text-gray-500 -mt-2">{monthLabel}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400 -mt-2">{monthLabel}</p>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="bg-white rounded-2xl p-3 shadow-sm border-l-4 border-green-400">
-          <div className="text-xs text-gray-500 mb-1">ยอดขายรวม</div>
-          <div className="font-bold text-green-600 text-base">{formatCurrency(totalRevenue)}</div>
+        <div className={`${card} p-3 border-l-[3px] border-l-green-400`}>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">ยอดขายรวม</div>
+          <div className="font-bold text-green-600 dark:text-green-400 text-base">{formatCurrency(totalRevenue)}</div>
         </div>
-        <div className="bg-white rounded-2xl p-3 shadow-sm border-l-4 border-red-400">
-          <div className="text-xs text-gray-500 mb-1">รายจ่ายรวม</div>
-          <div className="font-bold text-red-500 text-base">{formatCurrency(totalExpenses)}</div>
+        <div className={`${card} p-3 border-l-[3px] border-l-red-400`}>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">รายจ่ายรวม</div>
+          <div className="font-bold text-red-500 dark:text-red-400 text-base">{formatCurrency(totalExpenses)}</div>
         </div>
-        <div className={`rounded-2xl p-3 shadow-sm border-l-4 ${profit >= 0 ? "border-[#F5D400] bg-[#FFF8CC]" : "border-red-400 bg-red-50"}`}>
-          <div className="text-xs text-gray-500 mb-1">กำไร/ขาดทุน</div>
-          <div className={`font-bold text-base ${profit >= 0 ? "text-[#1A1A1A]" : "text-red-600"}`}>
+        <div className={`${card} p-3 border-l-[3px] ${profit >= 0 ? "border-l-[#F5D400] bg-[#FFF8CC] dark:bg-[#1C1800]" : "border-l-red-400"}`}>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">กำไร/ขาดทุน</div>
+          <div className={`font-bold text-base ${profit >= 0 ? "text-gray-900 dark:text-[#F5D400]" : "text-red-600 dark:text-red-400"}`}>
             {profit >= 0 ? "+" : ""}{formatCurrency(profit)}
           </div>
         </div>
         {totalCommission > 0 && (
-          <div className="bg-white rounded-2xl p-3 shadow-sm border-l-4 border-emerald-400">
-            <div className="text-xs text-gray-500 mb-1">รายได้จริง (Commission)</div>
-            <div className="font-bold text-emerald-600 text-base">{formatCurrency(totalCommission)}</div>
+          <div className={`${card} p-3 border-l-[3px] border-l-emerald-400`}>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">รายได้จริง (Commission)</div>
+            <div className="font-bold text-emerald-600 dark:text-emerald-400 text-base">{formatCurrency(totalCommission)}</div>
             {unbrandedSales > 0 && (
-              <div className="mt-1 text-xs text-amber-600">⚠️ ไม่ระบุแบรนด์ {formatCurrency(unbrandedSales)}</div>
+              <div className="mt-1 text-xs text-amber-600 dark:text-amber-400">⚠️ ไม่ระบุแบรนด์ {formatCurrency(unbrandedSales)}</div>
             )}
           </div>
         )}
@@ -120,51 +119,51 @@ export default async function FinancePage({
 
       {/* Commission by brand */}
       {(Object.keys(commissionByBrand).length > 0 || unbrandedSales > 0) && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
+        <div className={`${card} p-4`}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-[#1A1A1A]">🏷️ รายได้จริงตามแบรนด์</h2>
+            <h2 className="font-bold text-gray-900 dark:text-white">🏷️ รายได้จริงตามแบรนด์</h2>
             {unbrandedSales > 0 && Object.keys(commissionByBrand).length > 0 && (
-              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+              <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-[#2A2A2A] px-2 py-0.5 rounded-full">
                 ติดตาม {commissionCoverage}%
               </span>
             )}
           </div>
           <div className="space-y-2">
             {Object.values(commissionByBrand).sort((a, b) => b.commission - a.commission).map((b, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+              <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-[#222] last:border-0">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ background: b.color }} />
-                  <span className="text-gray-700 font-medium">{b.name}</span>
-                  <span className="text-xs text-gray-400">{formatCurrency(b.sales)}</span>
+                  <span className="text-gray-700 dark:text-gray-200 font-medium">{b.name}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{formatCurrency(b.sales)}</span>
                 </div>
-                <span className="font-bold text-green-600">{formatCurrency(b.commission)}</span>
+                <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(b.commission)}</span>
               </div>
             ))}
             {unbrandedSales > 0 && (
-              <div className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 opacity-60">
+              <div className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-[#222] last:border-0 opacity-60">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-                  <span className="text-gray-500 font-medium">ไม่ระบุแบรนด์</span>
-                  <span className="text-xs text-gray-400">{formatCurrency(unbrandedSales)}</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600" />
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">ไม่ระบุแบรนด์</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{formatCurrency(unbrandedSales)}</span>
                 </div>
-                <span className="text-xs text-gray-400 italic">ไม่ทราบ commission</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500 italic">ไม่ทราบ commission</span>
               </div>
             )}
           </div>
           {unbrandedSales > 0 && Object.keys(commissionByBrand).length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-[#2A2A2A]">
               <div className="flex gap-1 h-2 rounded-full overflow-hidden">
                 <div className="bg-emerald-400 h-full transition-all" style={{ width: `${commissionCoverage}%` }} />
-                <div className="bg-gray-200 h-full flex-1" />
+                <div className="bg-gray-200 dark:bg-[#2A2A2A] h-full flex-1" />
               </div>
-              <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 mt-1">
                 <span>ระบุแบรนด์ {formatCurrency(brandedSales)}</span>
                 <span>ไม่ระบุ {formatCurrency(unbrandedSales)}</span>
               </div>
             </div>
           )}
           {unbrandedSales > 0 && Object.keys(commissionByBrand).length === 0 && (
-            <p className="text-sm text-gray-400 text-center py-2">ยอดขายทั้งหมดยังไม่ได้ระบุแบรนด์ — ยังไม่สามารถคำนวณ commission ได้</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-2">ยอดขายทั้งหมดยังไม่ได้ระบุแบรนด์ — ยังไม่สามารถคำนวณ commission ได้</p>
           )}
         </div>
       )}
@@ -173,10 +172,10 @@ export default async function FinancePage({
       <FinanceCharts totalRevenue={totalRevenue} totalExpenses={totalExpenses} catData={catData} />
 
       {/* Employee Sales Leaderboard */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <h2 className="font-bold text-[#1A1A1A] mb-3">🏆 Leaderboard พนักงาน</h2>
+      <div className={`${card} p-4`}>
+        <h2 className="font-bold text-gray-900 dark:text-white mb-3">🏆 Leaderboard พนักงาน</h2>
         {Object.values(empSales).length === 0 ? (
-          <p className="text-gray-400 text-center py-4">ยังไม่มีข้อมูล</p>
+          <p className="text-gray-400 dark:text-gray-500 text-center py-4">ยังไม่มีข้อมูล</p>
         ) : (
           <div className="space-y-3">
             {Object.values(empSales).sort((a, b) => b.sales - a.sales).map((emp, i) => {
@@ -190,18 +189,18 @@ export default async function FinancePage({
                     <div className="flex items-center gap-2">
                       <span className="text-xl">{MEDALS[i] || "👤"}</span>
                       <div>
-                        <div className="font-semibold text-[#1A1A1A] text-sm">{emp.name}</div>
-                        <div className="text-xs text-gray-400">
+                        <div className="font-semibold text-gray-900 dark:text-white text-sm">{emp.name}</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500">
                           เงินเดือน {formatCurrency(emp.salary)} · Incentive {formatCurrency(incentive)}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-[#1A1A1A]">{formatCurrency(emp.sales)}</div>
+                      <div className="font-bold text-gray-900 dark:text-white">{formatCurrency(emp.sales)}</div>
                       <div className="text-xs text-[#F5A882]">รวมจ่าย {formatCurrency(emp.salary + incentive)}</div>
                     </div>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-100 dark:bg-[#2A2A2A] rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all"
                       style={{ width: `${pct}%`, background: "linear-gradient(90deg, #F5D400, #F5A882)" }}
                     />
@@ -218,13 +217,13 @@ export default async function FinancePage({
 
       {/* Expense by category */}
       {catData.length > 0 && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h2 className="font-bold text-[#1A1A1A] mb-3">📊 รายจ่ายตามหมวดหมู่</h2>
+        <div className={`${card} p-4`}>
+          <h2 className="font-bold text-gray-900 dark:text-white mb-3">📊 รายจ่ายตามหมวดหมู่</h2>
           <div className="space-y-2">
             {catData.map((c) => (
-              <div key={c.label} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-                <span className="text-gray-700">{c.emoji} {c.label}</span>
-                <span className="font-bold text-red-500">{formatCurrency(c.total)}</span>
+              <div key={c.label} className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-[#222] last:border-0">
+                <span className="text-gray-700 dark:text-gray-200">{c.emoji} {c.label}</span>
+                <span className="font-bold text-red-500 dark:text-red-400">{formatCurrency(c.total)}</span>
               </div>
             ))}
           </div>
@@ -232,26 +231,26 @@ export default async function FinancePage({
       )}
 
       {/* Expense list */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <h2 className="font-bold text-[#1A1A1A] mb-3">📋 รายการรายจ่าย</h2>
+      <div className={`${card} p-4`}>
+        <h2 className="font-bold text-gray-900 dark:text-white mb-3">📋 รายการรายจ่าย</h2>
         {expenses.length === 0 ? (
-          <p className="text-gray-400 text-center py-4">ยังไม่มีรายจ่ายเดือนนี้</p>
+          <p className="text-gray-400 dark:text-gray-500 text-center py-4">ยังไม่มีรายจ่ายเดือนนี้</p>
         ) : (
           <div className="space-y-2">
             {expenses.map((exp) => (
-              <div key={exp.id} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+              <div key={exp.id} className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-[#222] last:border-0">
                 <div>
-                  <div className="font-medium text-[#1A1A1A] text-sm">
+                  <div className="font-medium text-gray-900 dark:text-white text-sm">
                     {EXPENSE_CATEGORIES[exp.category]?.emoji} {exp.name}
                   </div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-gray-400 dark:text-gray-500">
                     {EXPENSE_CATEGORIES[exp.category]?.label} · {exp.date}
                     {exp.isRecurring && " · 🔄 ประจำ"}
                   </div>
-                  {exp.notes && <div className="text-xs text-gray-400">📝 {exp.notes}</div>}
+                  {exp.notes && <div className="text-xs text-gray-400 dark:text-gray-500">📝 {exp.notes}</div>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-red-500">{formatCurrency(exp.amount)}</span>
+                  <span className="font-bold text-red-500 dark:text-red-400">{formatCurrency(exp.amount)}</span>
                   <DeleteExpenseButton id={exp.id} />
                 </div>
               </div>

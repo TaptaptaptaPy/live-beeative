@@ -18,6 +18,8 @@ function fmt(n: number) {
   return n.toLocaleString("th-TH", { maximumFractionDigits: 0 });
 }
 
+const inputCls = "w-full border border-gray-200 dark:border-[#2A2A2A] bg-white dark:bg-[#242424] text-gray-700 dark:text-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5D400]";
+
 function BrandCard({ brand }: { brand: BrandWithStats }) {
   const [expanded, setExpanded] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -41,7 +43,7 @@ function BrandCard({ brand }: { brand: BrandWithStats }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl overflow-hidden border border-[#E5E7EB] dark:border-[#2A2A2A]">
       <div
         className="p-4 cursor-pointer border-l-4"
         style={{ borderLeftColor: brand.color }}
@@ -51,42 +53,40 @@ function BrandCard({ brand }: { brand: BrandWithStats }) {
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: brand.color }} />
             <div>
-              <div className="font-bold text-[#1A1A1A]">{brand.name}</div>
-              <div className="text-sm text-gray-500">Commission {brand.commissionRate}%</div>
+              <div className="font-bold text-gray-900 dark:text-white">{brand.name}</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">Commission {brand.commissionRate}%</div>
             </div>
           </div>
           <div className="text-right">
-            <div className="font-bold text-green-600">฿{fmt(brand.totalCommission)}</div>
-            <div className="text-xs text-gray-400">จาก ฿{fmt(brand.totalSales)} ({brand.entryCount} รายการ)</div>
+            <div className="font-bold text-green-600 dark:text-green-400">฿{fmt(brand.totalCommission)}</div>
+            <div className="text-xs text-gray-400 dark:text-gray-500">จาก ฿{fmt(brand.totalSales)} ({brand.entryCount} รายการ)</div>
           </div>
         </div>
       </div>
 
       {expanded && (
-        <div className="border-t border-gray-100 p-4 bg-gray-50">
+        <div className="border-t border-gray-100 dark:border-[#2A2A2A] p-4 bg-gray-50 dark:bg-[#141414]">
           <form action={handleUpdate} className="space-y-3">
             <div>
-              <label className="text-xs text-gray-500 block mb-1">ชื่อแบรนด์</label>
-              <input name="name" defaultValue={brand.name} required
-                className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]" />
+              <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">ชื่อแบรนด์</label>
+              <input name="name" defaultValue={brand.name} required className={inputCls} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-gray-500 block mb-1">Commission %</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Commission %</label>
                 <input name="commissionRate" type="number" defaultValue={brand.commissionRate}
-                  min="0" max="100" step="0.1" required
-                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]" />
+                  min="0" max="100" step="0.1" required className={inputCls} />
               </div>
               <div>
-                <label className="text-xs text-gray-500 block mb-1">สี</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">สี</label>
                 <input name="color" type="color" defaultValue={brand.color}
-                  className="w-full h-10 border-2 border-gray-200 rounded-xl px-1 py-1 focus:outline-none focus:border-[#F5D400]" />
+                  className="w-full h-10 border border-gray-200 dark:border-[#2A2A2A] rounded-xl px-1 py-1 focus:outline-none focus:ring-2 focus:ring-[#F5D400] bg-white dark:bg-[#242424]" />
               </div>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">หมายเหตุ (ถ้ามี)</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">หมายเหตุ (ถ้ามี)</label>
               <textarea name="notes" defaultValue={brand.notes ?? ""} rows={2}
-                className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400] resize-none" />
+                className={`${inputCls} resize-none`} />
             </div>
             {error && <div className="text-red-500 text-sm">{error}</div>}
             <div className="flex gap-2">
@@ -96,11 +96,11 @@ function BrandCard({ brand }: { brand: BrandWithStats }) {
                 {isPending ? "กำลังบันทึก..." : "บันทึก"}
               </button>
               <button type="button" onClick={handleDelete} disabled={isPending}
-                className="px-4 h-10 rounded-xl border-2 border-red-200 text-red-500 text-sm font-medium hover:bg-red-50 disabled:opacity-40">
+                className="px-4 h-10 rounded-xl border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-40">
                 ลบ
               </button>
               <button type="button" onClick={() => setExpanded(false)}
-                className="px-4 h-10 rounded-xl border-2 border-gray-200 text-gray-500 text-sm">
+                className="px-4 h-10 rounded-xl border border-gray-200 dark:border-[#2A2A2A] text-gray-500 dark:text-gray-400 text-sm">
                 ยกเลิก
               </button>
             </div>
@@ -125,30 +125,28 @@ function AddBrandForm({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <form action={handleSubmit} className="bg-white rounded-2xl p-4 shadow-sm space-y-3 border-l-4 border-[#F5D400]">
-      <h3 className="font-bold text-[#1A1A1A]">เพิ่มแบรนด์ใหม่</h3>
+    <form action={handleSubmit} className="bg-white dark:bg-[#1A1A1A] rounded-2xl p-4 border border-[#E5E7EB] dark:border-[#2A2A2A] border-l-[3px] border-l-[#F5D400] space-y-3">
+      <h3 className="font-bold text-gray-900 dark:text-white">เพิ่มแบรนด์ใหม่</h3>
       <div>
-        <label className="text-xs text-gray-500 block mb-1">ชื่อแบรนด์ *</label>
-        <input name="name" required placeholder="เช่น โอวัลติน, มาม่า..."
-          className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]" />
+        <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">ชื่อแบรนด์ *</label>
+        <input name="name" required placeholder="เช่น โอวัลติน, มาม่า..." className={inputCls} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-gray-500 block mb-1">Commission % *</label>
+          <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Commission % *</label>
           <input name="commissionRate" type="number" min="0" max="100" step="0.1"
-            placeholder="เช่น 12" required
-            className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400]" />
+            placeholder="เช่น 12" required className={inputCls} />
         </div>
         <div>
-          <label className="text-xs text-gray-500 block mb-1">สี</label>
+          <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">สี</label>
           <input name="color" type="color" defaultValue="#F5D400"
-            className="w-full h-10 border-2 border-gray-200 rounded-xl px-1 py-1 focus:outline-none focus:border-[#F5D400]" />
+            className="w-full h-10 border border-gray-200 dark:border-[#2A2A2A] rounded-xl px-1 py-1 focus:outline-none focus:ring-2 focus:ring-[#F5D400] bg-white dark:bg-[#242424]" />
         </div>
       </div>
       <div>
-        <label className="text-xs text-gray-500 block mb-1">หมายเหตุ (ถ้ามี)</label>
+        <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">หมายเหตุ (ถ้ามี)</label>
         <textarea name="notes" rows={2} placeholder="รายละเอียดเพิ่มเติม..."
-          className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F5D400] resize-none" />
+          className={`${inputCls} resize-none`} />
       </div>
       {error && <div className="text-red-500 text-sm">{error}</div>}
       <div className="flex gap-2">
@@ -158,7 +156,7 @@ function AddBrandForm({ onDone }: { onDone: () => void }) {
           {isPending ? "กำลังเพิ่ม..." : "เพิ่มแบรนด์"}
         </button>
         <button type="button" onClick={onDone}
-          className="px-4 h-10 rounded-xl border-2 border-gray-200 text-gray-500 text-sm">
+          className="px-4 h-10 rounded-xl border border-gray-200 dark:border-[#2A2A2A] text-gray-500 dark:text-gray-400 text-sm">
           ยกเลิก
         </button>
       </div>
@@ -182,7 +180,7 @@ export default function BrandsClient({ brands }: { brands: BrandWithStats[] }) {
       {showAdd && <AddBrandForm onDone={() => setShowAdd(false)} />}
 
       {brands.length === 0 && !showAdd ? (
-        <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl p-8 text-center text-gray-400 dark:text-gray-500 border border-[#E5E7EB] dark:border-[#2A2A2A]">
           ยังไม่มีแบรนด์ กดปุ่มด้านบนเพื่อเพิ่ม
         </div>
       ) : (

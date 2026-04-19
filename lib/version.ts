@@ -2,7 +2,7 @@
 // APP VERSION — อัปเดตทุกครั้งที่มีการแก้ไข
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const APP_VERSION = "1.14.3";
+export const APP_VERSION = "1.14.4";
 export const APP_VERSION_DATE = "2026-04-19";
 
 export type VersionEntry = {
@@ -14,6 +14,18 @@ export type VersionEntry = {
 };
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "1.14.4",
+    date: "2026-04-19",
+    type: "minor",
+    title: "Dark Mode ครบทุกหน้า + Loading Skeletons",
+    changes: [
+      "Dark mode ครบ 100%: Finance, Brands, Reports, Insights, Schedule (owner)",
+      "Staff page (Entry Form) รองรับ dark mode ทุกส่วน — cards, inputs, sticky footer",
+      "Loading skeleton สำหรับทุกหน้าที่เหลือ (9 หน้า): Finance / Brands / Reports / Insights / Schedule / Payroll / Employees / Targets / Logs",
+      "ปรับ shadow-sm → border เพื่อ dark mode ที่สมบูรณ์กว่าเดิม",
+    ],
+  },
   {
     version: "1.14.3",
     date: "2026-04-19",

@@ -9,10 +9,9 @@ const PLATFORM_EMOJI: Record<string, string> = {
   TIKTOK: "🎵", SHOPEE: "🛒", FACEBOOK: "📘", OTHER: "📱",
 };
 
-// ── Time helpers ───────────────────────────────────────────
 function toHours(t: string): number {
   const [h, m] = t.split(":").map(Number);
-  return (h === 0 && m === 0) ? 24 : h + m / 60; // 00:00 = เที่ยงคืน = 24
+  return (h === 0 && m === 0) ? 24 : h + m / 60;
 }
 
 function fmtTime(t: string): string {
@@ -26,7 +25,6 @@ function slotHours(start: string, end: string): number {
   return e > s ? e - s : 1;
 }
 
-// คำนวณ overlap กับ เช้า (09–16) และ เย็น (16–24) เป็นชั่วโมง
 function calcOverlap(start: string, end: string): { morning: number; evening: number } {
   const s = toHours(start);
   const e = toHours(end);
@@ -45,7 +43,6 @@ function getOverlapType(start: string, end: string): OverlapType {
   return "นอกกรอบ";
 }
 
-// Timeline: แสดง 06:00–24:00 = 18 ชม.
 const TL_START = 6;
 const TL_END = 24;
 const TL_HOURS = TL_END - TL_START;
@@ -58,7 +55,6 @@ function tlWidth(from: number, to: number): string {
   return `${(clamped / TL_HOURS) * 100}%`;
 }
 
-// ── Types ──────────────────────────────────────────────────
 type PlatStat = { name: string; count: number; total: number; avg: number };
 type EmpStat = {
   name: string; total: number; count: number;
@@ -90,7 +86,6 @@ function getSlotName(start: string | null, end: string | null): string {
   return "❓ ไม่ระบุ";
 }
 
-// ── Page ───────────────────────────────────────────────────
 export default async function InsightsPage({
   searchParams,
 }: {
@@ -111,19 +106,23 @@ export default async function InsightsPage({
 
   const DAYS_OPTIONS = [7, 30, 60, 90];
 
+  const card = "bg-white dark:bg-[#1A1A1A] rounded-2xl border border-[#E5E7EB] dark:border-[#2A2A2A]";
+
   if (entries.length === 0) {
     return (
-      <div className="p-4 max-w-2xl mx-auto space-y-4">
-        <h1 className="text-2xl font-bold text-[#1A1A1A] pt-2">🔍 วิเคราะห์ยอดขาย</h1>
+      <div className="p-4 max-w-2xl mx-auto space-y-4 animate-fade-in">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white pt-2">🔍 วิเคราะห์ยอดขาย</h1>
         <div className="flex gap-2">
           {DAYS_OPTIONS.map((d) => (
             <a key={d} href={`?days=${d}`}
               className={`text-sm px-4 py-2 rounded-xl font-medium border-2 transition-all ${
-                days === d ? "border-[#F5D400] bg-[#FFF8CC] text-[#1A1A1A]" : "border-gray-200 text-gray-500 bg-white"
+                days === d
+                  ? "border-[#F5D400] bg-[#FFF8CC] dark:bg-[#2A2200] text-gray-900 dark:text-[#F5D400]"
+                  : "border-gray-200 dark:border-[#2A2A2A] text-gray-500 dark:text-gray-400 bg-white dark:bg-[#1A1A1A]"
               }`}>{d} วัน</a>
           ))}
         </div>
-        <p className="text-gray-400 text-center py-20">ยังไม่มีข้อมูลในช่วงนี้</p>
+        <p className="text-gray-400 dark:text-gray-500 text-center py-20">ยังไม่มีข้อมูลในช่วงนี้</p>
       </div>
     );
   }
@@ -172,7 +171,6 @@ export default async function InsightsPage({
     };
   }).sort((a, b) => b.avgPerHour - a.avgPerHour);
 
-  // Unified comparison
   const compItems: CompItem[] = [
     ...SLOT_ORDER
       .filter((s) => slotMap[s] && s !== "⚙️ กำหนดเอง" && s !== "❓ ไม่ระบุ")
@@ -223,9 +221,9 @@ export default async function InsightsPage({
   }));
 
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto pb-28">
+    <div className="p-4 space-y-4 max-w-2xl mx-auto pb-28 animate-fade-in">
       <div className="flex items-center justify-between pt-2">
-        <h1 className="text-2xl font-bold text-[#1A1A1A]">🔍 วิเคราะห์ยอดขาย</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">🔍 วิเคราะห์ยอดขาย</h1>
         <ExportButton entries={exportEntries} days={days} dateRange={`${days} วันที่ผ่านมา`} />
       </div>
 
@@ -234,7 +232,9 @@ export default async function InsightsPage({
         {DAYS_OPTIONS.map((d) => (
           <a key={d} href={`?days=${d}`}
             className={`text-sm px-4 py-2 rounded-xl font-medium border-2 transition-all ${
-              days === d ? "border-[#F5D400] bg-[#FFF8CC] text-[#1A1A1A]" : "border-gray-200 text-gray-500 bg-white"
+              days === d
+                ? "border-[#F5D400] bg-[#FFF8CC] dark:bg-[#2A2200] text-gray-900 dark:text-[#F5D400]"
+                : "border-gray-200 dark:border-[#2A2A2A] text-gray-500 dark:text-gray-400 bg-white dark:bg-[#1A1A1A]"
             }`}>{d} วัน</a>
         ))}
       </div>
@@ -269,9 +269,9 @@ export default async function InsightsPage({
       </div>
 
       {/* ⏰ Time slot ranking */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <h2 className="font-bold text-[#1A1A1A] mb-1">⏰ ช่วงเวลาที่ขายดีที่สุด</h2>
-        <p className="text-xs text-gray-400 mb-4">เรียงจากดีสุดไปแย่สุด วัดจากยอดเฉลี่ยต่อชั่วโมง</p>
+      <div className={`${card} p-4`}>
+        <h2 className="font-bold text-gray-900 dark:text-white mb-1">⏰ ช่วงเวลาที่ขายดีที่สุด</h2>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">เรียงจากดีสุดไปแย่สุด วัดจากยอดเฉลี่ยต่อชั่วโมง</p>
 
         <div className="space-y-3">
           {compItems.map((c, i) => {
@@ -279,7 +279,6 @@ export default async function InsightsPage({
             const rankEmoji = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}.`;
             const pct = Math.round((c.avgPerHour / (compItems[0]?.avgPerHour || 1)) * 100);
 
-            // คำอธิบาย overlap แบบสั้น
             let overlapNote = "";
             if (c.overlap === "⚠️ คาบเกี่ยว") overlapNote = "คาบเช้า+เย็น";
             else if (c.overlap === "☀️ เช้า") overlapNote = "อยู่ในช่วงเช้า";
@@ -288,38 +287,35 @@ export default async function InsightsPage({
             return (
               <div key={c.label}
                 className={`rounded-xl p-3 border-2 transition-all ${
-                  c.isBest ? "border-[#F5D400] bg-[#FFF8CC]" : "border-gray-100 bg-gray-50"
+                  c.isBest
+                    ? "border-[#F5D400] bg-[#FFF8CC] dark:bg-[#2A2200]"
+                    : "border-gray-100 dark:border-[#2A2A2A] bg-gray-50 dark:bg-[#141414]"
                 }`}>
                 <div className="flex items-center justify-between gap-3">
-                  {/* Left: rank + name */}
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className="text-xl flex-shrink-0">{rankEmoji}</span>
                     <div className="min-w-0">
-                      <div className="font-bold text-[#1A1A1A] text-sm leading-tight">
+                      <div className={`font-bold text-sm leading-tight ${c.isBest ? "text-gray-900 dark:text-[#F5D400]" : "text-gray-900 dark:text-white"}`}>
                         {c.label}
                         {c.overlap === "⚠️ คาบเกี่ยว" && (
                           <span className="ml-1.5 text-[10px] text-orange-400 font-normal">คาบเช้า+เย็น</span>
                         )}
                       </div>
-                      <div className="text-[11px] text-gray-400 mt-0.5">
+                      <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
                         {c.count} ครั้ง
                         {c.sublabel && ` · ${c.sublabel}`}
                         {overlapNote && !c.isBest && c.overlap !== "⚠️ คาบเกี่ยว" && ` · ${overlapNote}`}
                       </div>
                     </div>
                   </div>
-
-                  {/* Right: key metric */}
                   <div className="text-right flex-shrink-0">
-                    <div className={`text-lg font-bold ${c.isBest ? "text-[#1A1A1A]" : "text-gray-700"}`}>
+                    <div className={`text-lg font-bold ${c.isBest ? "text-gray-900 dark:text-[#F5D400]" : "text-gray-700 dark:text-gray-200"}`}>
                       {formatCurrency(c.avgPerHour)}
                     </div>
-                    <div className="text-[10px] text-gray-400">ต่อชั่วโมง</div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500">ต่อชั่วโมง</div>
                   </div>
                 </div>
-
-                {/* Progress bar เทียบกับอันดับ 1 */}
-                <div className="mt-2.5 h-1.5 bg-white rounded-full overflow-hidden">
+                <div className="mt-2.5 h-1.5 bg-white dark:bg-[#1A1A1A] rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all"
                     style={{
                       width: `${pct}%`,
@@ -333,30 +329,30 @@ export default async function InsightsPage({
           })}
         </div>
 
-        <p className="text-[10px] text-gray-300 mt-3 text-center">
+        <p className="text-[10px] text-gray-300 dark:text-gray-700 mt-3 text-center">
           ยอด/ชม. ใช้เปรียบเทียบข้ามช่วงเวลาที่ยาวไม่เท่ากัน
         </p>
       </div>
 
       {/* 📱 Platform */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <h2 className="font-bold text-[#1A1A1A] mb-0.5">📱 Platform ที่ขายดีที่สุด</h2>
-        <p className="text-xs text-gray-400 mb-3">เรียงตามยอดขายรวม</p>
+      <div className={`${card} p-4`}>
+        <h2 className="font-bold text-gray-900 dark:text-white mb-0.5">📱 Platform ที่ขายดีที่สุด</h2>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">เรียงตามยอดขายรวม</p>
         <div className="space-y-3">
           {platList.map((p, i) => (
             <div key={p.name}>
               <div className="flex justify-between items-center mb-1">
                 <div className="flex items-center gap-1.5">
-                  {i === 0 && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-lg font-bold">Best</span>}
-                  <span className="font-semibold text-[#1A1A1A] text-sm">{p.name}</span>
-                  <span className="text-xs text-gray-400">{p.count} ครั้ง</span>
+                  {i === 0 && <span className="text-[10px] bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded-lg font-bold">Best</span>}
+                  <span className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{p.count} ครั้ง</span>
                 </div>
                 <div className="text-right">
-                  <div className="font-bold text-[#1A1A1A] text-sm">{formatCurrency(p.total)}</div>
-                  <div className="text-[10px] text-gray-400">avg {formatCurrency(p.avg)}/ครั้ง</div>
+                  <div className="font-bold text-gray-900 dark:text-white text-sm">{formatCurrency(p.total)}</div>
+                  <div className="text-[10px] text-gray-400 dark:text-gray-500">avg {formatCurrency(p.avg)}/ครั้ง</div>
                 </div>
               </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-gray-100 dark:bg-[#2A2A2A] rounded-full overflow-hidden">
                 <div className="h-full rounded-full" style={{ width: `${(p.total / maxPlat) * 100}%`, background: "linear-gradient(90deg,#6366f1,#a855f7)" }} />
               </div>
             </div>
@@ -365,8 +361,8 @@ export default async function InsightsPage({
       </div>
 
       {/* 🏆 Top performer */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <h2 className="font-bold text-[#1A1A1A] mb-3">🏆 Top Performer</h2>
+      <div className={`${card} p-4`}>
+        <h2 className="font-bold text-gray-900 dark:text-white mb-3">🏆 Top Performer</h2>
         <div className="space-y-3">
           {empList.map((emp, i) => (
             <div key={emp.name}>
@@ -374,15 +370,15 @@ export default async function InsightsPage({
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{["🥇","🥈","🥉"][i] || "👤"}</span>
                   <div>
-                    <div className="font-semibold text-[#1A1A1A] text-sm">{emp.name}</div>
-                    <div className="text-[10px] text-gray-400">
+                    <div className="font-semibold text-gray-900 dark:text-white text-sm">{emp.name}</div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500">
                       {emp.count} รายการ · avg {formatCurrency(Math.round(emp.total / emp.count))}/ครั้ง
                     </div>
                   </div>
                 </div>
-                <span className="font-bold text-[#1A1A1A]">{formatCurrency(emp.total)}</span>
+                <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(emp.total)}</span>
               </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-gray-100 dark:bg-[#2A2A2A] rounded-full overflow-hidden">
                 <div className="h-full rounded-full" style={{ width: `${(emp.total / maxEmp) * 100}%`, background: "linear-gradient(90deg,#F5D400,#F5A882)" }} />
               </div>
             </div>
@@ -392,33 +388,33 @@ export default async function InsightsPage({
 
       {/* 👤 × ⏰ Matrix */}
       {matrixSlots.length > 0 && empList.length > 0 && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h2 className="font-bold text-[#1A1A1A] mb-0.5">👤 × ⏰ พนักงาน vs ช่วงเวลา</h2>
-          <p className="text-xs text-gray-400 mb-3">ดูว่าใครขายดีช่วงไหน</p>
+        <div className={`${card} p-4`}>
+          <h2 className="font-bold text-gray-900 dark:text-white mb-0.5">👤 × ⏰ พนักงาน vs ช่วงเวลา</h2>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">ดูว่าใครขายดีช่วงไหน</p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr>
-                  <th className="text-left pb-2 text-gray-400 font-medium pr-3 whitespace-nowrap">พนักงาน</th>
+                  <th className="text-left pb-2 text-gray-400 dark:text-gray-500 font-medium pr-3 whitespace-nowrap">พนักงาน</th>
                   {matrixSlots.map((s) => (
-                    <th key={s} className="pb-2 text-gray-400 font-medium text-center min-w-[72px] whitespace-nowrap">{s}</th>
+                    <th key={s} className="pb-2 text-gray-400 dark:text-gray-500 font-medium text-center min-w-[72px] whitespace-nowrap">{s}</th>
                   ))}
-                  <th className="pb-2 text-gray-400 font-medium text-right pl-2 whitespace-nowrap">รวม</th>
+                  <th className="pb-2 text-gray-400 dark:text-gray-500 font-medium text-right pl-2 whitespace-nowrap">รวม</th>
                 </tr>
               </thead>
               <tbody>
                 {empList.map((emp) => (
-                  <tr key={emp.name} className="border-t border-gray-50">
-                    <td className="py-2 font-medium text-[#1A1A1A] pr-3 whitespace-nowrap">{emp.name}</td>
+                  <tr key={emp.name} className="border-t border-gray-50 dark:border-[#222]">
+                    <td className="py-2 font-medium text-gray-900 dark:text-white pr-3 whitespace-nowrap">{emp.name}</td>
                     {matrixSlots.map((s) => {
                       const val = emp.slots[s] || 0;
                       return (
                         <td key={s} className="py-2 text-center">
-                          {val > 0 ? <span className="font-semibold text-[#1A1A1A]">{formatCurrency(val)}</span> : <span className="text-gray-200">—</span>}
+                          {val > 0 ? <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(val)}</span> : <span className="text-gray-200 dark:text-gray-700">—</span>}
                         </td>
                       );
                     })}
-                    <td className="py-2 text-right pl-2 font-bold text-[#1A1A1A]">{formatCurrency(emp.total)}</td>
+                    <td className="py-2 text-right pl-2 font-bold text-gray-900 dark:text-white">{formatCurrency(emp.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -429,28 +425,28 @@ export default async function InsightsPage({
 
       {/* 👤 × 📱 Matrix */}
       {platList.length > 0 && empList.length > 0 && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h2 className="font-bold text-[#1A1A1A] mb-0.5">👤 × 📱 พนักงาน vs Platform</h2>
-          <p className="text-xs text-gray-400 mb-3">ดูว่าใครถนัด Platform ไหน</p>
+        <div className={`${card} p-4`}>
+          <h2 className="font-bold text-gray-900 dark:text-white mb-0.5">👤 × 📱 พนักงาน vs Platform</h2>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">ดูว่าใครถนัด Platform ไหน</p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr>
-                  <th className="text-left pb-2 text-gray-400 font-medium pr-3 whitespace-nowrap">พนักงาน</th>
+                  <th className="text-left pb-2 text-gray-400 dark:text-gray-500 font-medium pr-3 whitespace-nowrap">พนักงาน</th>
                   {platList.map((p) => (
-                    <th key={p.name} className="pb-2 text-gray-400 font-medium text-center min-w-[72px] whitespace-nowrap">{p.name}</th>
+                    <th key={p.name} className="pb-2 text-gray-400 dark:text-gray-500 font-medium text-center min-w-[72px] whitespace-nowrap">{p.name}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {empList.map((emp) => (
-                  <tr key={emp.name} className="border-t border-gray-50">
-                    <td className="py-2 font-medium text-[#1A1A1A] pr-3 whitespace-nowrap">{emp.name}</td>
+                  <tr key={emp.name} className="border-t border-gray-50 dark:border-[#222]">
+                    <td className="py-2 font-medium text-gray-900 dark:text-white pr-3 whitespace-nowrap">{emp.name}</td>
                     {platList.map((p) => {
                       const val = emp.platforms[p.name] || 0;
                       return (
                         <td key={p.name} className="py-2 text-center">
-                          {val > 0 ? <span className="font-semibold text-[#1A1A1A]">{formatCurrency(val)}</span> : <span className="text-gray-200">—</span>}
+                          {val > 0 ? <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(val)}</span> : <span className="text-gray-200 dark:text-gray-700">—</span>}
                         </td>
                       );
                     })}
