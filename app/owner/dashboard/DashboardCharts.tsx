@@ -22,7 +22,7 @@ type Props = {
 
 // Platform brand colors
 const PLATFORM_COLORS: Record<string, string> = {
-  TikTok:   "#69C9D0",
+  TikTok:   "#010101",
   Shopee:   "#EE4D2D",
   Facebook: "#1877F2",
   "อื่นๆ":  "#6B7280",
